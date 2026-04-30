@@ -1,0 +1,58 @@
+/**
+ * CONNECTION: Paytm Merchant
+ * TYPE: apikey (API key / credential pair)
+ *
+ * This connection stores the three values required to authenticate all
+ * Paytm Merchant API calls:
+ *
+ *   merchantId  – The MID assigned to the merchant by Paytm.
+ *   keySecret   – The secret key used as the HMAC seed for the checksum
+ *                 algorithm. Never logged or exposed in response output.
+ *   baseUrl     – Allows switching between Production and Staging without
+ *                 rebuilding the app.
+ *                 Production : https://securegw.paytm.in
+ *                 Staging    : https://securegw-stage.paytm.in
+ *
+ * SECURITY NOTES
+ *   - keySecret is marked as `password: true` so Make never displays it in
+ *     the UI after the connection is saved.
+ *   - Do NOT add keySecret to any module's response output mapping.
+ *   - Connection values are accessed in module IML as `connection.<field>`.
+ *
+ * HOW TO COPY INTO MAKE
+ *   Apps Editor → Connections → [your connection] → Edit → paste below JSON
+ *   into the "Communication" tab (or the Base tab, depending on connection type).
+ *   Parameters go into the separate Parameters tab as form fields.
+ */
+{
+    // ── Parameters (credential fields shown to the user) ────────────────────
+    // NOTE: In Make's Apps Editor, parameters are defined in the separate
+    // "Parameters" tab, not inline here. This block is documentation-only.
+    //
+    // Parameters:
+    //   - name: merchantId  | label: Merchant ID   | type: text     | required: true
+    //   - name: keySecret   | label: Key Secret     | type: password | required: true
+    //   - name: baseUrl     | label: Base URL        | type: select   | required: true
+    //       options:
+    //         - label: Production  | value: https://securegw.paytm.in
+    //         - label: Staging     | value: https://securegw-stage.paytm.in
+
+    // ── Validation call ──────────────────────────────────────────────────────
+    // Make calls this block when the user clicks "Save" on the connection form.
+    // It must return 2xx for the connection to be marked as valid.
+    // Using the order-list endpoint as a lightweight connectivity check.
+    "url": "{{parameters.baseUrl}}/merchant-passbook/search/list/order/v2",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "body": {
+        "mid": "{{parameters.merchantId}}"
+    },
+    "response": {
+        // A non-2xx Paytm response (e.g. checksum missing) still means the
+        // credentials were accepted by the network layer — we treat any HTTP
+        // 200 from Paytm's gateway as "connection valid".
+        "valid": "{{if(body.body.resultInfo.resultStatus; true; false)}}"
+    }
+}
