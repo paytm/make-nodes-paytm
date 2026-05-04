@@ -1,0 +1,35 @@
+/**
+ * MODULE: makeApiCall
+ * TYPE: Universal (required by Make platform — one per app)
+ * PURPOSE: Custom Paytm API call for endpoints not covered by other modules.
+ *
+ * IMPORTANT — RELATIVE PATHS ONLY
+ *   The `url` parameter must be a relative path, e.g. /link/fetch
+ *   The proxy prepends the Paytm base URL server-side.
+ *   Make will reject absolute URLs (https://...) in Universal modules.
+ *
+ * PROXY FUNCTION: makeApiCall
+ *   The proxy forwards params.url + params.method + params.body to the
+ *   corresponding Paytm endpoint, applying the correct AES checksum.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/makeApiCall?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "method": "{{parameters.method}}",
+            "url": "{{parameters.url}}",
+            "headers": "{{parameters.headers}}",
+            "body": "{{parameters.body}}"
+        }
+    },
+    "response": {
+        "output": "{{body.data}}"
+    }
+}

@@ -1,0 +1,34 @@
+/**
+ * MODULE: fetchRefundList
+ * TYPE: Search (returns a list of refunds)
+ * PAYTM ENDPOINT: POST /merchant-passbook/api/v1/refundList (via proxy)
+ * PROXY FUNCTION: fetchRefundList
+ *
+ * RESPONSE STRUCTURE
+ *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
+ *   Verify body.data.refundDetailList iterate path during E2E testing.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/fetchRefundList?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
+            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
+            "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
+            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "isSort": "{{ifempty(parameters.isSort; true)}}"
+        }
+    },
+    "response": {
+        // Verify body.data.refundDetailList is the correct iterate path during E2E testing.
+        "iterate": "{{body.data.refundDetailList}}",
+        "output": "{{item}}"
+    }
+}

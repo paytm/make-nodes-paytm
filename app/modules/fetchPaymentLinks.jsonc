@@ -1,0 +1,40 @@
+/**
+ * MODULE: fetchPaymentLinks
+ * TYPE: Search (returns a list of payment links)
+ * PAYTM ENDPOINT: POST /link/fetch (via proxy)
+ * PROXY FUNCTION: fetchPaymentLinks
+ *
+ * All parameters are optional — empty request returns all links.
+ * linkType: FIXED / GENERIC
+ * paymentStatus: CREATED / PENDING / SUCCESS / FAILED / EXPIRED
+ *
+ * RESPONSE STRUCTURE
+ *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
+ *   Verify body.data.linkDetailsList iterate path during E2E testing.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/fetchPaymentLinks?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "fromDate": "{{formatDate(parameters.fromDate; 'YYYY-MM-DD')}}",
+            "toDate": "{{formatDate(parameters.toDate; 'YYYY-MM-DD')}}",
+            "linkId": "{{parameters.linkId}}",
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "linkType": "{{parameters.linkType}}",
+            "paymentStatus": "{{parameters.paymentStatus}}",
+            "isActive": "{{parameters.isActive}}"
+        }
+    },
+    "response": {
+        // Verify body.data.linkDetailsList is the correct iterate path during E2E testing.
+        "iterate": "{{body.data.linkDetailsList}}",
+        "output": "{{item}}"
+    }
+}
