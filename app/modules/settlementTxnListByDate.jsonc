@@ -1,0 +1,37 @@
+/**
+ * MODULE: settlementTxnListByDate
+ * TYPE: Search (returns a list of settled transactions)
+ * PAYTM ENDPOINT: RTDD via proxy
+ * PROXY FUNCTION: settlementTxnListByDate
+ *
+ * RTDD/Settlement envelope — proxy builds the signed downstream body.
+ * No checksum logic in IML.
+ *
+ * RESPONSE STRUCTURE
+ *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
+ *   Verify body.data.body.txnList iterate path during E2E testing.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/settlementTxnListByDate?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",
+            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD HH:mm:ss')}}",
+            "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
+            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "settlementOrderId": "{{parameters.settlementOrderId}}"
+        }
+    },
+    "response": {
+        // Verify body.data.body.txnList is the correct iterate path during E2E testing.
+        "iterate": "{{body.data.body.txnList}}",
+        "output": "{{item}}"
+    }
+}

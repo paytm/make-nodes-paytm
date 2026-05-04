@@ -1,0 +1,28 @@
+/**
+ * MODULE: cancelSubscription
+ * TYPE: Action (single-item response)
+ * PAYTM ENDPOINT: POST /subscription/subscription/cancel (via proxy)
+ * PROXY FUNCTION: cancelSubscription
+ *
+ * RESPONSE STRUCTURE
+ *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
+ *   Verify body.data path during E2E testing.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/cancelSubscription?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "subsId": "{{parameters.subsId}}"
+        }
+    },
+    "response": {
+        "output": "{{body.data}}"
+    }
+}
