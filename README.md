@@ -5,65 +5,100 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Official Paytm custom app for [Make](https://www.make.com) (formerly Integromat).  
-Provides full API parity with the [n8n-nodes-paytm](https://github.com/paytm/n8n-nodes-paytm) package — 13 modules across Order, Payment Link, Refund, Settlement, and Subscription.
+14 modules covering Order, Payment Link, Refund, Settlement, Subscription, and Universal API calls.
+
+---
+
+## Architecture
+
+All modules call the **merchant-adapter signing proxy**, not Paytm directly.
+
+```
+Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
+              [HMAC-SHA256 inbound auth]           [AES checksum outbound]
+```
+
+Paytm's checksum algorithm (`AES-128-CBC(SHA256(sorted_values + salt) + salt, keySecret, IV)`) cannot be computed in Make IML — there is no `aes()` or `encrypt()` function. The proxy handles all Paytm signing server-side. Make modules only need to authenticate to the proxy via HMAC-SHA256, which IML can compute.
+
+**Proxy base URLs:**
+
+| Environment | Proxy URL |
+|-------------|-----------|
+| Production | `https://paytm-make-proxy.paytmpayments.com` |
+| Staging | `https://paytm-make-proxy-staging.paytmpayments.com` |
+
+**Every module follows this request pattern:**
+```jsonc
+{
+    "url": "{{connection.baseUrl}}/make/{functionName}?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": { ...module-specific params... }
+    }
+}
+```
 
 ---
 
 ## Modules
 
 ### Order
-| Module | Description | Paytm API |
-|--------|-------------|-----------|
-| `fetchOrderList` | List transactions within a date range | `POST /merchant-passbook/search/list/order/v2` |
-| `orderDetail` | Detailed info for a single order | `POST /merchant-adapter/internal/ORDER_DETAIL` |
+| Module | Type | Description | Downstream |
+|--------|------|-------------|------------|
+| `fetchOrderList` | Search | List transactions within a date range | `POST /merchant-passbook/search/list/order/v2` |
+| `orderDetail` | Action | Detailed info for a single order | RTDD via proxy |
 
 ### Payment Link
-| Module | Description | Paytm API |
-|--------|-------------|-----------|
-| `fetchPaymentLinks` | List all payment links | `POST /link/fetch` |
-| `fetchTransactionsForLink` | Transactions for a specific payment link | `POST /link/fetchTransaction` |
-| `createPaymentLink` | Create a new payment link | `POST /link/create` |
+| Module | Type | Description | Downstream |
+|--------|------|-------------|------------|
+| `fetchPaymentLinks` | Search | List all payment links | `POST /link/fetch` |
+| `fetchTransactionsForLink` | Search | Transactions for a specific payment link | `POST /link/fetchTransaction` |
+| `createPaymentLink` | Action | Create a new payment link | `POST /link/create` |
 
 ### Refund
-| Module | Description | Paytm API |
-|--------|-------------|-----------|
-| `fetchRefundList` | List refunds for a date range | `POST /merchant-passbook/api/v1/refundList` |
-| `checkRefundStatus` | Check the status of a specific refund | `POST /v2/refund/status` |
-| `initiateRefund` | Initiate a new refund | `POST /refund/apply` |
+| Module | Type | Description | Downstream |
+|--------|------|-------------|------------|
+| `fetchRefundList` | Search | List refunds for a date range | `POST /merchant-passbook/api/v1/refundList` |
+| `checkRefundStatus` | Action | Check the status of a specific refund | `POST /v2/refund/status` |
+| `initiateRefund` | Action | Initiate a new refund | `POST /refund/apply` |
 
 ### Settlement
-| Module | Description | Paytm API |
-|--------|-------------|-----------|
-| `settlementTxnListByDate` | List settled transactions by date range | `POST /merchant-adapter/internal/TxnListByDate` |
-| `settlementBillList` | List settlement bills / payouts | `POST /merchant-adapter/internal/BILL_LIST` |
+| Module | Type | Description | Downstream |
+|--------|------|-------------|------------|
+| `settlementTxnListByDate` | Search | List settled transactions by date range | RTDD via proxy |
+| `settlementBillList` | Search | List settlement bills / payouts | RTDD via proxy |
 
 ### Subscription
-| Module | Description | Paytm API |
-|--------|-------------|-----------|
-| `fetchSubscriptionStatus` | Get status of a subscription | `POST /subscription/subscription/checkStatus` |
-| `pauseResumeSubscription` | Pause or resume an active subscription | `POST /subscription/subscription/status/modify` |
-| `cancelSubscription` | Cancel a subscription | `POST /subscription/subscription/cancel` |
+| Module | Type | Description | Downstream |
+|--------|------|-------------|------------|
+| `fetchSubscriptionStatus` | Action | Get status of a subscription | `POST /subscription/subscription/checkStatus` |
+| `pauseResumeSubscription` | Action | Pause or resume an active subscription | `POST /subscription/subscription/status/modify` |
+| `cancelSubscription` | Action | Cancel a subscription | `POST /subscription/subscription/cancel` |
+
+### Universal
+| Module | Type | Description |
+|--------|------|-------------|
+| `makeApiCall` | Universal | Custom Paytm API call for endpoints not covered by other modules. Accepts a relative path — proxy prepends the base URL. Required by Make platform. |
 
 ---
 
-## Authentication
+## Connection
 
-Most modules use **Paytm Checksum** (HMAC-SHA256) in a `head`/`body` request envelope:
+The connection stores three fields:
 
-```json
-{
-  "body": { "mid": "...", "...": "request params" },
-  "head": { "tokenType": "AES", "signature": "<checksum>", "channelId": "WEB" }
-}
-```
+| Field | Label | Type | Purpose |
+|-------|-------|------|---------|
+| `merchantId` | Merchant ID | text | Paytm MID — passed as `?mid=` on every proxy call |
+| `keySecret` | Key Secret | password | Used for HMAC inbound auth to the proxy and by the proxy to sign the downstream Paytm checksum. Never logged or sent to Paytm directly. |
+| `baseUrl` | Environment | select | Proxy base URL — determines the Paytm environment downstream |
 
-Checksum algorithm:
-1. Sort body parameter **keys** alphabetically.
-2. Concatenate their **values** in sorted-key order, each suffixed with `|`.
-3. Append the merchant's **Key Secret**.
-4. Compute `SHA-256` and Base64-encode the result.
-
-Settlement modules (Order Detail, Settlement Txn List, Settlement Bill List) use a separate **Settlement Envelope** with a different signature pattern.
+Connection validation sends a lightweight signed request to `/make/fetchPaymentLinks`. HTTP 200 means the HMAC was accepted — credentials are valid at the proxy level.
 
 ---
 
@@ -87,12 +122,13 @@ make-nodes-paytm/
 │   │   ├── settlementBillList.jsonc
 │   │   ├── fetchSubscriptionStatus.jsonc
 │   │   ├── pauseResumeSubscription.jsonc
-│   │   └── cancelSubscription.jsonc
+│   │   ├── cancelSubscription.jsonc
+│   │   └── makeApiCall.jsonc
 │   └── remote-procedures/          # Dynamic dropdown data loaders
 │       └── listCurrencies.jsonc
 ├── docs/
-│   ├── api-mapping.md              # n8n → Make module mapping
-│   └── checksum-algorithm.md       # Paytm checksum deep-dive
+│   ├── api-mapping.md              # Full parameter mapping for all modules
+│   └── checksum-algorithm.md       # Paytm checksum deep-dive + proxy rationale
 ├── scripts/
 │   └── validate-jsonc.sh           # CI helper: strips comments, validates JSON
 └── README.md
@@ -116,18 +152,29 @@ make-nodes-paytm/
 
 ### Adding a new module
 
-1. Create `app/modules/<moduleName>.jsonc` following the pattern of an existing module.
-2. Determine the alphabetical key-sort order for the endpoint's body params — this governs the checksum signing string. Document it in the file header comment.
-3. Build the `temp` block: one entry per body param that needs formatting or defaulting, each value suffixed with `|`.
-4. Assemble the `sha256()` call using only `temp.*` references — no nested function calls inside `sha256()` (Make IML parser limitation).
-5. Add the module to the table in this README.
-6. Open a PR referencing the corresponding PG Jira ticket.
-
-### Checksum signing string — key sort reference
-
-Every `.jsonc` module file documents the exact signing string order in its file-header comment. Always verify against:
-- Paytm's official Node SDK: `lib/utils/PaytmChecksum.js`
-- Paytm Merchant API documentation for the specific endpoint.
+1. Create `app/modules/<moduleName>.jsonc` using the standard proxy pattern:
+   ```jsonc
+   {
+       "url": "{{connection.baseUrl}}/make/<functionName>?mid={{connection.merchantId}}",
+       "method": "POST",
+       "headers": {
+           "Content-Type": "application/json",
+           "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+       },
+       "body": {
+           "requestId": "{{uuid()}}",
+           "timestamp": "{{toTimestamp(now)}}",
+           "params": {
+               // module-specific params
+           }
+       },
+       "response": { ... }
+   }
+   ```
+2. `<functionName>` must match the function name registered in the merchant-adapter proxy.
+3. Do **not** compute any checksum in IML — the proxy handles all Paytm signing server-side.
+4. Add the module to the tables in this README and in `docs/api-mapping.md`.
+5. Open a PR referencing the corresponding PG Jira ticket.
 
 ---
 
@@ -137,7 +184,6 @@ Every `.jsonc` module file documents the exact signing string order in its file-
 |-----------|-------|
 | Make API | Custom Apps v2 |
 | Paytm Merchant API | v2 (Production + Staging) |
-| n8n parity | v1.6.1 (`n8n-nodes-paytm`) |
 | IML version | Make IML (semicolon separator) |
 
 ---
