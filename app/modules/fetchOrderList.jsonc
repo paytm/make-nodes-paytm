@@ -1,0 +1,46 @@
+/**
+ * MODULE: fetchOrderList
+ * TYPE: Search (returns a list of orders)
+ * PAYTM ENDPOINT: POST /merchant-passbook/search/list/order/v2 (via proxy)
+ * PROXY FUNCTION: fetchOrderList
+ *
+ * This is an RTDD-envelope API. The proxy builds the signed
+ * {request: payload, signature: ...} envelope — no checksum in IML.
+ *
+ * AUTH PATTERN (same for all modules)
+ *   X-Signature = HMAC-SHA256(json(body), connection.keySecret)
+ *   The proxy verifies this, then signs the downstream Paytm request.
+ *
+ * RESPONSE STRUCTURE
+ *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
+ *   Iterate path for the order list: body.data.body.txn
+ *   Verify this path against the actual Paytm response during E2E testing.
+ */
+{
+    "url": "{{connection.baseUrl}}/make/fetchOrderList?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": {
+            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
+            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
+            "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
+            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
+            "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
+            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "merchantOrderId": "{{parameters.merchantOrderId}}",
+            "payMode": "{{parameters.payMode}}"
+        }
+    },
+    "response": {
+        // Iterate over the order list returned by Paytm.
+        // Verify body.data.body.txn is the correct path during E2E testing.
+        "iterate": "{{body.data.body.txn}}",
+        "output": "{{item}}"
+    }
+}

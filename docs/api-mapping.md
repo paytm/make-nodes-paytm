@@ -4,6 +4,47 @@ Source of truth: https://github.com/paytm/n8n-nodes-paytm
 
 ---
 
+## Architecture
+
+All 14 modules call the **merchant-adapter signing proxy**, not Paytm directly.
+The proxy handles Paytm's AES-128-CBC checksum — IML cannot compute it.
+
+```
+Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
+              [HMAC-SHA256 inbound auth]           [AES checksum outbound]
+```
+
+**Connection fields:**
+- `merchantId` — Paytm MID, passed as `?mid=` query param
+- `keySecret` — HMAC signing key (password, never logged)
+- `baseUrl` — proxy base URL (select: Production / Staging)
+
+**Proxy base URLs:**
+
+| Environment | Proxy URL |
+|-------------|-----------|
+| Production | `https://paytm-make-proxy.paytmpayments.com` |
+| Staging | `https://paytm-make-proxy-staging.paytmpayments.com` |
+
+**Module request pattern (all modules follow this):**
+```jsonc
+{
+    "url": "{{connection.baseUrl}}/make/{functionName}?mid={{connection.merchantId}}",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    },
+    "body": {
+        "requestId": "{{uuid()}}",
+        "timestamp": "{{toTimestamp(now)}}",
+        "params": { ...module-specific params... }
+    }
+}
+```
+
+---
+
 ## Module List
 
 ### Payment Link
@@ -18,8 +59,8 @@ Source of truth: https://github.com/paytm/n8n-nodes-paytm
 
 | # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
 |---|---------------|-------------|-----------|----------------|------|------------|--------|
-| 4 | Fetch Order List | `fetchOrderList` | **Search** | `POST /merchant-passbook/search/list/order/v2` | Checksum | readOnlyHint | ⚠️ Scaffolded — needs proxy + auth envelope fix |
-| 5 | Order Detail | `orderDetail` | **Action** | `POST /merchant-adapter/internal/ORDER_DETAIL?mid={mid}` | Settlement | readOnlyHint | 🔲 Pending |
+| 4 | Fetch Order List | `fetchOrderList` | **Search** | `POST /merchant-passbook/search/list/order/v2` | Checksum | readOnlyHint | 🔲 Pending |
+| 5 | Order Detail | `orderDetail` | **Action** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
 
 ### Refund
 
@@ -33,8 +74,8 @@ Source of truth: https://github.com/paytm/n8n-nodes-paytm
 
 | # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
 |---|---------------|-------------|-----------|----------------|------|------------|--------|
-| 9 | Settlement Bill List | `settlementBillList` | **Search** | `POST /merchant-adapter/internal/BILL_LIST?mid={mid}` | Settlement | readOnlyHint | 🔲 Pending |
-| 10 | Settlement Txn List by Date | `settlementTxnListByDate` | **Search** | `POST /merchant-adapter/internal/TxnListByDate?mid={mid}` | Settlement | readOnlyHint | 🔲 Pending |
+| 9 | Settlement Bill List | `settlementBillList` | **Search** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
+| 10 | Settlement Txn List by Date | `settlementTxnListByDate` | **Search** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
 
 ### Subscription
 
@@ -48,7 +89,41 @@ Source of truth: https://github.com/paytm/n8n-nodes-paytm
 
 | # | Module | Make Type | Purpose | Status |
 |---|--------|-----------|---------|--------|
-| 14 | `makeApiCall` | **Universal** | Custom Paytm API call for endpoints not covered by modules 1–13. Must use a relative path routed through the signing proxy. | 🔲 Pending |
+| 14 | `makeApiCall` | **Universal** | Custom Paytm API call for endpoints not covered by modules 1–13. Accepts a relative path — proxy prepends the Paytm base URL. Absolute URLs rejected by Make. | 🔲 Pending |
+
+---
+
+## Auth Mechanisms
+
+### 1. Checksum — standard Paytm APIs (modules 1–4, 6–8, 11–13)
+
+Paytm expects:
+```json
+{
+  "body": { "mid": "...", ...params },
+  "head": { "tokenType": "AES", "signature": "<checksum>", "channelId": "WEB" }
+}
+```
+
+Checksum = `AES-128-CBC(SHA256(sorted_values + salt) + salt, keySecret, IV="@@@@&&&&####$$")`.
+**Cannot be computed in Make IML.** Handled entirely by the proxy.
+
+### 2. Settlement / RTDD Envelope (modules 5, 9, 10)
+
+```json
+{ "request": { "body": {...}, "head": {...} }, "signature": "<checksum>" }
+```
+
+Built by the proxy (`buildRtddSignedDownstreamBody`). Also cannot be done in IML.
+
+### 3. Inbound — Make → Proxy (all modules)
+
+```
+X-Signature: HMAC-SHA256(json(body), keySecret)
+```
+
+This IS computable in IML via `{{hmac(json(body); connection.keySecret; 'sha256')}}`.
+The proxy verifies this before forwarding any request.
 
 ---
 
@@ -60,49 +135,8 @@ Source of truth: https://github.com/paytm/n8n-nodes-paytm
 | Search | Multi-item / list response | `"search"` |
 | Universal | Custom API call — one per app, required by Make | `"universal"` |
 
-> Make will reject the app submission if the Universal module is missing, or if it uses an absolute URL
-> (a user could redirect requests to their own server to harvest auth tokens). The Universal module
-> must accept a **relative path** and the proxy prepends the base URL.
-
----
-
-## Base URLs (from n8n constants)
-
-| Environment | Paytm Base URL | Proxy Base URL |
-|-------------|---------------|----------------|
-| Production | `https://secure.paytmpayments.com` | `https://paytm-make-proxy.paytmpayments.com` |
-| Staging | `https://securestage.paytmpayments.com` | `https://paytm-make-proxy-staging.paytmpayments.com` |
-
-Make modules call the **proxy**, not Paytm directly. The proxy calls the Paytm base URL.
-
----
-
-## Auth Mechanisms
-
-### 1. Checksum — Head Envelope (10 modules: 1–3, 4, 6–8, 11–13)
-
-```json
-{
-  "body": { "mid": "...", "...": "request params" },
-  "head": { "tokenType": "AES", "signature": "<checksum>", "channelId": "WEB" }
-}
-```
-
-Checksum = AES-128-CBC(SHA256(sorted_values + "|" + salt) + salt, keySecret, IV="@@@@&&&&####$$").
-Cannot be computed in Make IML — handled entirely by the signing proxy.
-
-### 2. Settlement Envelope (3 modules: 5, 9, 10)
-
-```json
-{
-  "ipRoleId": "...",
-  "...": "request params",
-  "signature": "<checksum>",
-  "X-PGP-Unique-ID": "<uuid>"
-}
-```
-
-Built by `settlementUtil.ts` in n8n. Also handled by the signing proxy.
+> Make will reject the app submission if the Universal module is missing, or if it uses an absolute URL.
+> The Universal module must accept a **relative path** — the proxy prepends the base URL.
 
 ---
 
@@ -157,15 +191,13 @@ Built by `settlementUtil.ts` in n8n. Also handled by the signing proxy.
 | `merchantOrderId` | `merchantOrderId` | text | no | — |
 | `payMode` | `payMode` | text | no | — |
 
-### 5. orderDetail — Action (Settlement envelope)
+### 5. orderDetail — Action (RTDD / Settlement envelope)
 
 | n8n Param | Make Param | Type | Required | Default | Notes |
 |-----------|-----------|------|----------|---------|-------|
-| `bizOrderId` | `bizOrderId` | text | yes | — | Transaction-level ID — PRD: "against a transaction ID" |
+| `bizOrderId` | `bizOrderId` | text | yes | — | Transaction-level ID — not `orderId` |
 | `isSettlementInfo` | `isSettlementInfo` | boolean | no | `false` | Include settlement breakdown |
 | `excludePaymentsData` | `excludePaymentsData` | boolean | no | `false` | Omit payment details |
-
-> **Correction from earlier mapping:** field is `bizOrderId`, not `orderId`. Verified from n8n source.
 
 ### 6. initiateRefund — Action
 
@@ -194,21 +226,19 @@ Built by `settlementUtil.ts` in n8n. Also handled by the signing proxy.
 | `pageSize` | `pageSize` | integer | no | `20` |
 | `isSort` | `isSort` | boolean | no | `true` |
 
-### 9. settlementBillList — Search (Settlement envelope)
+### 9. settlementBillList — Search (RTDD / Settlement envelope)
 
 | n8n Param | Make Param | Type | Required | Default | Notes |
 |-----------|-----------|------|----------|---------|-------|
-| `settlementStartTime` | `settlementStartTime` | datetime | yes | — | Settlement date range start |
-| `settlementEndTime` | `settlementEndTime` | datetime | yes | — | Settlement date range end |
+| `settlementStartTime` | `settlementStartTime` | datetime | yes | — | Not `startDate` |
+| `settlementEndTime` | `settlementEndTime` | datetime | yes | — | Not `endDate` |
 | `pageNum` | `pageNum` | integer | no | `1` | — |
 | `pageSize` | `pageSize` | integer | no | `20` | Max 50 |
 | `settlementBillId` | `settlementBillId` | text | no | — | Payout ID filter |
 | `settleStatus` | `settleStatus` | select | no | — | BANK_INITIATED / PAYOUT_SETTLED / PAYOUT_UNSETTLED / WAIT_FOR_SETTLE |
 | `utrNo` | `utrNo` | text | no | — | UTR number filter |
 
-> **Correction from earlier mapping:** date fields are `settlementStartTime`/`settlementEndTime`, not generic `startDate`/`endDate`. Verified from n8n source.
-
-### 10. settlementTxnListByDate — Search (Settlement envelope)
+### 10. settlementTxnListByDate — Search (RTDD / Settlement envelope)
 
 | n8n Param | Make Param | Type | Required | Default |
 |-----------|-----------|------|----------|---------|
