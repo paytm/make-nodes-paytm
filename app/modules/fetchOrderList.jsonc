@@ -4,8 +4,8 @@
  * PAYTM ENDPOINT: POST /merchant-passbook/search/list/order/v2 (via proxy)
  * PROXY FUNCTION: fetchOrderList
  *
- * This is an RTDD-envelope API. The proxy builds the signed
- * {request: payload, signature: ...} envelope — no checksum in IML.
+ * Standard Checksum API — proxy builds the AES-signed {body, head} envelope.
+ * No checksum logic in IML.
  *
  * AUTH PATTERN (same for all modules)
  *   X-Signature = HMAC-SHA256(json(body), connection.keySecret)
