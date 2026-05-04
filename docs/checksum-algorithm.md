@@ -1,87 +1,87 @@
-# Paytm Checksum Algorithm — Implementation Guide
+# Paytm Checksum Algorithm — Reference & Proxy Rationale
 
-This document explains the Paytm checksum algorithm and how it is implemented in Make's IML.
+> **Make IML cannot compute the Paytm checksum.**
+> All checksum generation is handled server-side by the merchant-adapter signing proxy.
+> Module JSONC files only need to send an HMAC-SHA256 inbound auth header (`X-Signature`) to the proxy.
+> This document is reference material — it explains WHY the proxy exists.
 
 ---
 
-## Algorithm (Official Paytm SDK)
+## Full Paytm Checksum Algorithm (Official SDK)
 
 ```
-signingString = sortedValues.join('|') + '|' + keySecret
-checksum      = Base64( SHA-256( signingString ) )
+signingString = sortedParamValues.join('|') + '|' + salt
+sha256Hash    = SHA-256( signingString )
+checksum      = AES-128-CBC( sha256Hash + '|' + salt, keySecret, IV="@@@@&&&&####$$" )
 ```
 
 Steps in detail:
 
-1. Take all body parameters that are **part of the signed payload** for the endpoint.
+1. Collect all body parameters that are part of the signed payload for the endpoint.
 2. **Sort their keys alphabetically** (case-sensitive, ASCII order).
-3. Build the signing string: for each key in sorted order, append its value followed by `|`.
-4. Append `keySecret` (no trailing `|` after the secret — the last `|` comes from the last body param).
-5. Compute `SHA-256` of the full string and `Base64`-encode the raw digest.
+3. For each key in sorted order, append its value followed by `|`.
+4. Append `keySecret` (no trailing `|` after it).
+5. Compute `SHA-256` of the full string — this is the hash.
+6. Encrypt `(hash + "|" + salt)` with AES-128-CBC using `keySecret` as the encryption key and `"@@@@&&&&####$$"` as the fixed IV.
+7. Base64-encode the AES output — this is the final `paytmChecksum`.
 
-Reference: `PaytmChecksum.js` in the official Paytm PHP/Node SDK.
+Reference implementation: `PaytmChecksum.java` in Paytm's Java SDK.
 
 ---
 
-## Make IML Implementation
+## Why Make IML Cannot Do This
 
-### The Problem
+Make's IML crypto functions: `sha256()`, `hmac()`, `base64()`, `md5()`.
 
-Make's `sha256(input; encoding)` function accepts a single string expression.  
-Building the signing string requires calling `formatDate()`, `ifempty()`, and `toString()` on individual parameters, then concatenating them.
+Step 5 (SHA-256) is possible. Step 6 (AES-128-CBC encryption) is **not available in IML** — there is no `aes()` or `encrypt()` function.
 
-Make's IML parser fails with **"Unexpected end of string"** when more than ~3 such nested calls are concatenated inside a single `sha256()` expression.
+Attempting to use only SHA-256 (without the AES layer) produces a wrong checksum that Paytm will reject with `CHECKSUM_INVALID`.
 
-### The Solution — `temp` block
+---
 
-Make supports a `temp` block in module communications JSON. It is evaluated **before** `body`, `headers`, and `url`, and its values are available as `temp.<name>`.
+## What Make Modules Do Instead
 
-Each `temp` entry:
-- Applies the necessary IML function (`formatDate`, `ifempty`, `toString`).
-- Appends the `|` separator that the Paytm algorithm requires.
-
-The `sha256()` call then concatenates only `temp.*` property references — no nested function calls — staying within the parser limit.
+Modules authenticate to the proxy using HMAC-SHA256 (which IML _can_ compute):
 
 ```jsonc
-"temp": {
-    "sd":     "{{formatDate(parameters.startDate; 'YYYY-MM-DD') + '|'}}",
-    "isSort": "true|",
-    "mid":    "{{connection.merchantId + '|'}}",
-    // ...
+"headers": {
+    "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
 },
 "body": {
-    "paytmChecksum": "{{sha256(temp.sd + temp.isSort + temp.mid + ...; 'base64')}}"
+    "requestId": "{{uuid()}}",
+    "timestamp": "{{toTimestamp(now)}}",
+    "params": { ...module params... }
 }
 ```
 
+The proxy:
+1. Verifies `X-Signature` = HMAC-SHA256(raw body, keySecret).
+2. Extracts `params` from the body.
+3. Builds the full Paytm checksum (SHA-256 + AES) server-side.
+4. Forwards the signed request to Paytm.
+
 ---
 
-## Signing Key Order Per Module
+## Settlement Envelope (modules 5, 9, 10)
 
-Every module's `.jsonc` file documents the exact signing key order. Quick reference:
+RTDD and settlement APIs use a different envelope format:
 
-| Module | Signed Keys (alphabetical) |
-|--------|---------------------------|
-| `listOrders` | fromDate · isSort · mid · orderSearchStatus · orderSearchType · pageNumber · pageSize · toDate |
-| `listPaymentLinks` | fromDate · mid · pageNumber · pageSize · toDate |
-| `listTransactionsForLink` | linkId · mid · pageNumber · pageSize |
+```json
+{ "request": { "body": {...}, "head": {...} }, "signature": "<checksum>" }
+```
+
+This is also handled entirely by the proxy (`buildRtddSignedDownstreamBody` in `WrapperExecuteHelper`).
+
+---
+
+## Signing Key Order Per Module (reference)
+
+| Module | Signed Keys (alphabetical order) |
+|--------|----------------------------------|
+| `fetchPaymentLinks` | fromDate · mid · pageNumber · pageSize · toDate |
+| `fetchTransactionsForLink` | linkId · mid · pageNumber · pageSize |
 | `createPaymentLink` | amount · currency · mid · orderId |
-| `listRefunds` | fromDate · mid · pageNumber · pageSize · toDate |
+| `fetchRefundList` | fromDate · mid · pageNumber · pageSize · toDate |
 | `checkRefundStatus` | mid · refId · txnId |
 | `initiateRefund` | mid · orderId · refAmount · refId · txnId · txnType |
-
-> **RTDD modules** use a different authentication mechanism (Signed Request Envelope) — see the RTDD module files for details.
-
----
-
-## Verifying a Checksum Locally
-
-```bash
-# Node.js one-liner to verify the checksum for a known payload
-node -e "
-const crypto = require('crypto');
-const params = { fromDate:'2025-01-01', isSort:'true', mid:'YOUR_MID', orderSearchStatus:'ALL', orderSearchType:'TRANSACTION', pageNumber:'1', pageSize:'10', toDate:'2025-01-31' };
-const str = Object.keys(params).sort().map(k => params[k]).join('|') + '|YOUR_KEY_SECRET';
-console.log(Buffer.from(crypto.createHash('sha256').update(str).digest()).toString('base64'));
-"
-```
+| RTDD modules (fetchOrderList, orderDetail, settlementBillList, settlementTxnListByDate) | Proxy-handled — different envelope |
