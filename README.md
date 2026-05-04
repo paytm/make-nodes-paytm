@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Official Paytm custom app for [Make](https://www.make.com) (formerly Integromat).  
-Provides full API parity with the [n8n-nodes-paytm](https://github.com/paytm/n8n-nodes-paytm) package — 14 modules across Order, Payment Link, Refund, Settlement, Subscription, and Universal.
+14 modules covering Order, Payment Link, Refund, Settlement, Subscription, and Universal API calls.
 
 ---
 
@@ -127,7 +127,7 @@ make-nodes-paytm/
 │   └── remote-procedures/          # Dynamic dropdown data loaders
 │       └── listCurrencies.jsonc
 ├── docs/
-│   ├── api-mapping.md              # Full n8n → Make parameter mapping
+│   ├── api-mapping.md              # Full parameter mapping for all modules
 │   └── checksum-algorithm.md       # Paytm checksum deep-dive + proxy rationale
 ├── scripts/
 │   └── validate-jsonc.sh           # CI helper: strips comments, validates JSON
@@ -184,7 +184,6 @@ make-nodes-paytm/
 |-----------|-------|
 | Make API | Custom Apps v2 |
 | Paytm Merchant API | v2 (Production + Staging) |
-| n8n parity | v1.6.1 (`n8n-nodes-paytm`) |
 | IML version | Make IML (semicolon separator) |
 
 ---

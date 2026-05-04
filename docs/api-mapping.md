@@ -1,6 +1,4 @@
-# API Mapping — n8n v1.6.1 → Make
-
-Source of truth: https://github.com/paytm/n8n-nodes-paytm
+# API Mapping — Paytm Modules for Make
 
 ---
 
@@ -49,38 +47,38 @@ Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
 
 ### Payment Link
 
-| # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
-|---|---------------|-------------|-----------|----------------|------|------------|--------|
+| # | Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
+|---|-----------|-------------|-----------|----------------|------|------------|--------|
 | 1 | Create Payment Link | `createPaymentLink` | **Action** | `POST /link/create` | Checksum | destructiveHint | 🔲 Pending |
 | 2 | Fetch Payment Links | `fetchPaymentLinks` | **Search** | `POST /link/fetch` | Checksum | readOnlyHint | 🔲 Pending |
 | 3 | Fetch Transactions for Link | `fetchTransactionsForLink` | **Search** | `POST /link/fetchTransaction` | Checksum | readOnlyHint | 🔲 Pending |
 
 ### Order
 
-| # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
-|---|---------------|-------------|-----------|----------------|------|------------|--------|
+| # | Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
+|---|-----------|-------------|-----------|----------------|------|------------|--------|
 | 4 | Fetch Order List | `fetchOrderList` | **Search** | `POST /merchant-passbook/search/list/order/v2` | Checksum | readOnlyHint | 🔲 Pending |
 | 5 | Order Detail | `orderDetail` | **Action** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
 
 ### Refund
 
-| # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
-|---|---------------|-------------|-----------|----------------|------|------------|--------|
+| # | Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
+|---|-----------|-------------|-----------|----------------|------|------------|--------|
 | 6 | Initiate Refund | `initiateRefund` | **Action** | `POST /refund/apply` | Checksum | destructiveHint | 🔲 Pending |
 | 7 | Check Refund Status | `checkRefundStatus` | **Action** | `POST /v2/refund/status` | Checksum | readOnlyHint | 🔲 Pending |
 | 8 | Fetch Refund List | `fetchRefundList` | **Search** | `POST /merchant-passbook/api/v1/refundList` | Checksum | readOnlyHint | 🔲 Pending |
 
 ### Settlement
 
-| # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
-|---|---------------|-------------|-----------|----------------|------|------------|--------|
+| # | Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
+|---|-----------|-------------|-----------|----------------|------|------------|--------|
 | 9 | Settlement Bill List | `settlementBillList` | **Search** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
 | 10 | Settlement Txn List by Date | `settlementTxnListByDate` | **Search** | RTDD via proxy | Settlement | readOnlyHint | 🔲 Pending |
 
 ### Subscription
 
-| # | n8n Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
-|---|---------------|-------------|-----------|----------------|------|------------|--------|
+| # | Operation | Make Module | Make Type | Paytm Endpoint | Auth | Annotation | Status |
+|---|-----------|-------------|-----------|----------------|------|------------|--------|
 | 11 | Fetch Subscription Status | `fetchSubscriptionStatus` | **Action** | `POST /subscription/subscription/checkStatus` | Checksum | readOnlyHint | 🔲 Pending |
 | 12 | Pause / Resume Subscription | `pauseResumeSubscription` | **Action** | `POST /subscription/subscription/status/modify` | Checksum | destructiveHint | 🔲 Pending |
 | 13 | Cancel Subscription | `cancelSubscription` | **Action** | `POST /subscription/subscription/cancel` | Checksum | destructiveHint | 🔲 Pending |
@@ -140,135 +138,135 @@ The proxy verifies this before forwarding any request.
 
 ---
 
-## Parameter Mapping (verified against n8n source)
+## Parameter Mapping
 
 ### 1. createPaymentLink — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `linkName` | `linkName` | text | yes | — |
-| `linkDescription` | `linkDescription` | text | yes | — |
-| `linkType` | `linkType` | select (FIXED / GENERIC) | yes | — |
-| `amount` | `amount` | number | no (required if FIXED) | — |
-| `customerName` | `customerName` | text | no | — |
-| `customerEmail` | `customerEmail` | text | no | — |
-| `customerMobile` | `customerMobile` | text | no | — |
-| `expiryDate` | `expiryDate` | date | no | — |
-| `sendSms` | `sendSms` | boolean | no | — |
-| `sendEmail` | `sendEmail` | boolean | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `linkName` | text | yes | — |
+| `linkDescription` | text | yes | — |
+| `linkType` | select (FIXED / GENERIC) | yes | — |
+| `amount` | number | no (required if FIXED) | — |
+| `customerName` | text | no | — |
+| `customerEmail` | text | no | — |
+| `customerMobile` | text | no | — |
+| `expiryDate` | date | no | — |
+| `sendSms` | boolean | no | — |
+| `sendEmail` | boolean | no | — |
 
 ### 2. fetchPaymentLinks — Search
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `fromDate` | `fromDate` | date | no | — |
-| `toDate` | `toDate` | date | no | — |
-| `linkId` | `linkId` | text | no | — |
-| `merchantRequestId` | `merchantRequestId` | text | no | — |
-| `linkType` | `linkType` | select (FIXED / GENERIC) | no | — |
-| `paymentStatus` | `paymentStatus` | select | no | — |
-| `isActive` | `isActive` | boolean | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `fromDate` | date | no | — |
+| `toDate` | date | no | — |
+| `linkId` | text | no | — |
+| `merchantRequestId` | text | no | — |
+| `linkType` | select (FIXED / GENERIC) | no | — |
+| `paymentStatus` | select | no | — |
+| `isActive` | boolean | no | — |
 
 ### 3. fetchTransactionsForLink — Search
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `linkId` | `linkId` | text | yes | — |
-| `searchStartDate` | `searchStartDate` | date | no | — |
-| `searchEndDate` | `searchEndDate` | date | no | — |
-| `fetchAllTxns` | `fetchAllTxns` | boolean | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `linkId` | text | yes | — |
+| `searchStartDate` | date | no | — |
+| `searchEndDate` | date | no | — |
+| `fetchAllTxns` | boolean | no | — |
 
 ### 4. fetchOrderList — Search
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `startDate` | `startDate` | date | yes | — |
-| `endDate` | `endDate` | date | yes | — |
-| `orderSearchStatus` | `orderSearchStatus` | select | no | `ALL` |
-| `orderSearchType` | `orderSearchType` | select | no | `TRANSACTION` |
-| `pageNumber` | `pageNumber` | integer | no | `1` |
-| `pageSize` | `pageSize` | integer | no | `20` |
-| `merchantOrderId` | `merchantOrderId` | text | no | — |
-| `payMode` | `payMode` | text | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `startDate` | date | yes | — |
+| `endDate` | date | yes | — |
+| `orderSearchStatus` | select | no | `ALL` |
+| `orderSearchType` | select | no | `TRANSACTION` |
+| `pageNumber` | integer | no | `1` |
+| `pageSize` | integer | no | `20` |
+| `merchantOrderId` | text | no | — |
+| `payMode` | text | no | — |
 
 ### 5. orderDetail — Action (RTDD / Settlement envelope)
 
-| n8n Param | Make Param | Type | Required | Default | Notes |
-|-----------|-----------|------|----------|---------|-------|
-| `bizOrderId` | `bizOrderId` | text | yes | — | Transaction-level ID — not `orderId` |
-| `isSettlementInfo` | `isSettlementInfo` | boolean | no | `false` | Include settlement breakdown |
-| `excludePaymentsData` | `excludePaymentsData` | boolean | no | `false` | Omit payment details |
+| Param | Type | Required | Default | Notes |
+|-------|------|----------|---------|-------|
+| `bizOrderId` | text | yes | — | Transaction-level ID — not `orderId` |
+| `isSettlementInfo` | boolean | no | `false` | Include settlement breakdown |
+| `excludePaymentsData` | boolean | no | `false` | Omit payment details |
 
 ### 6. initiateRefund — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `orderId` | `orderId` | text | yes | — |
-| `txnId` | `txnId` | text | yes | — |
-| `refId` | `refId` | text | yes | — |
-| `refundAmount` | `refundAmount` | number | yes | — |
-| `comments` | `comments` | text | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `orderId` | text | yes | — |
+| `txnId` | text | yes | — |
+| `refId` | text | yes | — |
+| `refundAmount` | number | yes | — |
+| `comments` | text | no | — |
 
 ### 7. checkRefundStatus — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `orderId` | `orderId` | text | yes | — |
-| `refId` | `refId` | text | yes | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `orderId` | text | yes | — |
+| `refId` | text | yes | — |
 
 ### 8. fetchRefundList — Search
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `startDate` | `startDate` | date | yes | — |
-| `endDate` | `endDate` | date | yes | — |
-| `pageNum` | `pageNum` | integer | no | `1` |
-| `pageSize` | `pageSize` | integer | no | `20` |
-| `isSort` | `isSort` | boolean | no | `true` |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `startDate` | date | yes | — |
+| `endDate` | date | yes | — |
+| `pageNum` | integer | no | `1` |
+| `pageSize` | integer | no | `20` |
+| `isSort` | boolean | no | `true` |
 
 ### 9. settlementBillList — Search (RTDD / Settlement envelope)
 
-| n8n Param | Make Param | Type | Required | Default | Notes |
-|-----------|-----------|------|----------|---------|-------|
-| `settlementStartTime` | `settlementStartTime` | datetime | yes | — | Not `startDate` |
-| `settlementEndTime` | `settlementEndTime` | datetime | yes | — | Not `endDate` |
-| `pageNum` | `pageNum` | integer | no | `1` | — |
-| `pageSize` | `pageSize` | integer | no | `20` | Max 50 |
-| `settlementBillId` | `settlementBillId` | text | no | — | Payout ID filter |
-| `settleStatus` | `settleStatus` | select | no | — | BANK_INITIATED / PAYOUT_SETTLED / PAYOUT_UNSETTLED / WAIT_FOR_SETTLE |
-| `utrNo` | `utrNo` | text | no | — | UTR number filter |
+| Param | Type | Required | Default | Notes |
+|-------|------|----------|---------|-------|
+| `settlementStartTime` | datetime | yes | — | Not `startDate` |
+| `settlementEndTime` | datetime | yes | — | Not `endDate` |
+| `pageNum` | integer | no | `1` | — |
+| `pageSize` | integer | no | `20` | Max 50 |
+| `settlementBillId` | text | no | — | Payout ID filter |
+| `settleStatus` | select | no | — | BANK_INITIATED / PAYOUT_SETTLED / PAYOUT_UNSETTLED / WAIT_FOR_SETTLE |
+| `utrNo` | text | no | — | UTR number filter |
 
 ### 10. settlementTxnListByDate — Search (RTDD / Settlement envelope)
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `startDate` | `startDate` | datetime | yes | — |
-| `endDate` | `endDate` | datetime | yes | — |
-| `pageNum` | `pageNum` | integer | no | `1` |
-| `pageSize` | `pageSize` | integer | no | `20` |
-| `settlementOrderId` | `settlementOrderId` | text | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `startDate` | datetime | yes | — |
+| `endDate` | datetime | yes | — |
+| `pageNum` | integer | no | `1` |
+| `pageSize` | integer | no | `20` |
+| `settlementOrderId` | text | no | — |
 
 ### 11. fetchSubscriptionStatus — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `subsId` | `subsId` | text | no | — |
-| `orderId` | `orderId` | text | no | — |
-| `linkId` | `linkId` | text | no | — |
-| `custId` | `custId` | text | no | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `subsId` | text | no | — |
+| `orderId` | text | no | — |
+| `linkId` | text | no | — |
+| `custId` | text | no | — |
 
 ### 12. pauseResumeSubscription — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `subsId` | `subsId` | text | yes | — |
-| `status` | `status` | select (SUSPENDED / ACTIVE) | yes | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `subsId` | text | yes | — |
+| `status` | select (SUSPENDED / ACTIVE) | yes | — |
 
 ### 13. cancelSubscription — Action
 
-| n8n Param | Make Param | Type | Required | Default |
-|-----------|-----------|------|----------|---------|
-| `subsId` | `subsId` | text | yes | — |
+| Param | Type | Required | Default |
+|-------|------|----------|---------|
+| `subsId` | text | yes | — |
 
 ### 14. makeApiCall — Universal
 
