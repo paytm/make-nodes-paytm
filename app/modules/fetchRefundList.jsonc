@@ -13,11 +13,11 @@
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
         "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
