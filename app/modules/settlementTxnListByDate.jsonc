@@ -19,7 +19,7 @@
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
+        "requestId": "{{formatDate(now; 'x')}}",
         "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",

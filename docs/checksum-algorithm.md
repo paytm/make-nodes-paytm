@@ -48,8 +48,8 @@ Modules authenticate to the proxy using HMAC-SHA256 (which IML _can_ compute):
     "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
 },
 "body": {
-    "requestId": "{{uuid()}}",
-    "timestamp": "{{toTimestamp(now)}}",
+    "requestId": "{{formatDate(now; 'x')}}",
+    "timestamp": "{{formatDate(now; 'x')}}",
     "params": { ...module params... }
 }
 ```

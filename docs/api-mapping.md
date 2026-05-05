@@ -1,6 +1,6 @@
 # API Mapping — Paytm Modules for Make
 
-For **paste-ready mappable-parameter lists** and **communication JSON** per module (Make UI), see **[make-ui-paste-by-module.md](./make-ui-paste-by-module.md)** — aligned with `app/modules/*.jsonc`.
+For **paste-ready mappable-parameter lists** and **communication JSON** per module (Make UI), see **[make-ui-modules-communication-and-parameters.md](./make-ui-modules-communication-and-parameters.md)** — aligned with `app/modules/*.jsonc`.
 
 ---
 
@@ -42,8 +42,8 @@ Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": { ...module-specific params... }
     }
 }

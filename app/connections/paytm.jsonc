@@ -45,8 +45,8 @@
         "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {}
     },
     "response": {
