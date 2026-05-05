@@ -18,7 +18,7 @@
  *
  * HOW AUTHENTICATION WORKS
  *   Every module request includes:
- *     X-Signature: HMAC-SHA256(json(body), keySecret)
+ *     X-Signature: HMAC-SHA256(createJSON(body), keySecret)
  *   The proxy verifies this before forwarding to Paytm.
  *   keySecret never travels to Paytm — only the HMAC of the body does.
  *
@@ -42,7 +42,7 @@
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); parameters.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
     },
     "body": {
         "requestId": "{{uuid()}}",

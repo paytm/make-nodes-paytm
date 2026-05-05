@@ -34,7 +34,7 @@ Paytm's checksum algorithm (`AES-128-CBC(SHA256(sorted_values + salt) + salt, ke
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
         "requestId": "{{uuid()}}",
@@ -159,7 +159,7 @@ make-nodes-paytm/
        "method": "POST",
        "headers": {
            "Content-Type": "application/json",
-           "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+           "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
        },
        "body": {
            "requestId": "{{uuid()}}",
