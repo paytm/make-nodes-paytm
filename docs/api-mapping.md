@@ -20,7 +20,7 @@ Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
 - `keySecret` — HMAC signing key (password, never logged)
 - `baseUrl` — proxy base URL (select: Production / Staging)
 
-**Make UI:** [make-connection-paytm.md](./make-connection-paytm.md) — build the connection from [`app/connections/paytm.jsonc`](../app/connections/paytm.jsonc).
+**Make UI:** [make-connection-paytm.md](./make-connection-paytm.md) — build the connection from `[app/connections/paytm.jsonc](../app/connections/paytm.jsonc)`.
 
 **Proxy base URLs:**
 

@@ -93,7 +93,7 @@ Paste the JSON below **without** the `//` comment lines:
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **URL**           | Lightweight read to proxy: `**fetchPaymentLinks`** with empty `**params`** (allowed by API).                                      |
 | `**?mid=`**       | Same pattern as modules: MID in query string.                                                                                     |
-| `**X-Signature`** | HMAC‑SHA256 of `**createJSON(body)**` with the **Key Secret** the user entered — proves possession of `**keySecret`**.            |
+| `**X-Signature`** | HMAC‑SHA256 of `**createJSON(body)`** with the **Key Secret** the user entered — proves possession of `**keySecret`**.            |
 | `**body`**        | Same envelope as modules: `**requestId`**, `**timestamp`**, `**params**`. Empty `**params**` is fine for `**fetchPaymentLinks**`. |
 | `**valid**`       | Connection is marked **valid** only if HTTP **status is 200** (proxy accepted HMAC and responded OK).                             |
 
@@ -110,19 +110,19 @@ Saved connections expose:
 - `**{{connection.keySecret}}`**
 - `**{{connection.baseUrl}}`**
 
-All module JSONCs under `app/modules/` use `**connection.***` in URLs and `**X-Signature**` — not `**parameters.***`.
+All module JSONCs under `app/modules/` use `**connection.*`** in URLs and `**X-Signature**` — not `**parameters.***`.
 
 ---
 
 ## Checklist before testing Save
 
 
-| Check          | Detail                                                                                                                                                                                   |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Proxy deployed | `**POST /make/fetchPaymentLinks**` exists behind `**baseUrl**`.                                                                                                                          |
-| HMAC parity    | Proxy verifies **same canonical body** Make signs (`createJSON(body)` + encoding).                                                                                                       |
-| MID            | Real test MID allowed on that proxy path.                                                                                                                                                |
-| IML helpers    | `**formatDate(now; 'x')**` (epoch ms for `requestId` / `timestamp`; `uuid()` / `toTimestamp(now)` not supported everywhere), `**createJSON(body)**`, `**sha256(createJSON(body); parameters.keySecret)**` (HMAC-SHA256; no `hmac()` in IML). |
+| Check          | Detail                                                                                                                                                                                                                                       |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Proxy deployed | `**POST /make/fetchPaymentLinks**` exists behind `**baseUrl**`.                                                                                                                                                                              |
+| HMAC parity    | Proxy verifies **same canonical body** Make signs (`createJSON(body)` + encoding).                                                                                                                                                           |
+| MID            | Real test MID allowed on that proxy path.                                                                                                                                                                                                    |
+| IML helpers    | `**formatDate(now; 'x')`** (epoch ms for `requestId` / `timestamp`; `uuid()` / `toTimestamp(now)` not supported everywhere), `**createJSON(body)**`, `**sha256(createJSON(body); parameters.keySecret)**` (HMAC-SHA256; no `hmac()` in IML). |
 
 
 ---
