@@ -17,7 +17,7 @@
  *   Verify body.data.body.settleBillList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/settlementBillList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",

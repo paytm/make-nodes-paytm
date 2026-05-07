@@ -13,7 +13,7 @@
  *   Verify body.data.linkDetailsList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchPaymentLinks?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",

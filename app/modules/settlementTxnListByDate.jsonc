@@ -12,7 +12,7 @@
  *   Verify body.data.body.txnList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/settlementTxnListByDate?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",

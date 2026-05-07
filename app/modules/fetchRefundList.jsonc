@@ -9,7 +9,7 @@
  *   Verify body.data.refundDetailList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchRefundList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchRefundList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",

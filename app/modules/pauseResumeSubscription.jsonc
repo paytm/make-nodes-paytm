@@ -11,7 +11,7 @@
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/pauseResumeSubscription?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/pauseResumeSubscription?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",

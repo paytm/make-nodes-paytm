@@ -11,7 +11,7 @@
  *   Verify body.data.txnDetailsList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchTransactionsForLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchTransactionsForLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
