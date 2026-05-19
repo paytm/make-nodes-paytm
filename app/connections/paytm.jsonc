@@ -13,8 +13,9 @@
  *                   2. The proxy uses it to sign the Paytm AES checksum downstream.
  *                 Marked password:true — Make never displays it after save.
  *   baseUrl     – Proxy base URL. Determines the Paytm environment downstream.
- *                 Production : https://paytm-make-proxy.paytmpayments.com
- *                 Staging    : https://paytm-make-proxy-staging.paytmpayments.com
+ *                 Production : https://securegw.paytm.in
+ *                 Staging    : https://securegw-stage.paytm.in
+ *                 QA         : https://pgp-qa5.paytm.in/merchant-adapter
  *
  * HOW AUTHENTICATION WORKS
  *   Every module request includes:
@@ -31,8 +32,9 @@
  *   - name: keySecret   | label: Key Secret    | type: password | required: true
  *   - name: baseUrl     | label: Environment   | type: select   | required: true
  *       options:
- *         - label: Production  | value: https://paytm-make-proxy.paytmpayments.com
- *         - label: Staging     | value: https://paytm-make-proxy-staging.paytmpayments.com
+ *         - label: Production  | value: https://securegw.paytm.in
+ *         - label: Staging     | value: https://securegw-stage.paytm.in
+ *         - label: QA          | value: https://pgp-qa5.paytm.in/merchant-adapter
  */
 {
     // Validation call — send a minimal signed request to the proxy.
