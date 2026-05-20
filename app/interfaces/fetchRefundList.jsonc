@@ -1,0 +1,22 @@
+/**
+ * INTERFACE: fetchRefundList
+ * OUTPUT: one item from body.data.refundDetailList (the iterate path)
+ *
+ * Paste this into: Apps Editor → fetchRefundList → Interface tab
+ * Strip JSONC comments first.
+ *
+ * NOTE: Field names must be verified against a real Paytm
+ *       /merchant-passbook/api/v1/refundList response.
+ */
+[
+    { "name": "refId",         "label": "Refund reference ID", "type": "text" },
+    { "name": "refundId",      "label": "Paytm refund ID",     "type": "text" },
+    { "name": "orderId",       "label": "Order ID",            "type": "text" },
+    { "name": "txnId",         "label": "Transaction ID",      "type": "text" },
+    { "name": "refundAmount",  "label": "Refund amount",       "type": "text" },
+    { "name": "refundStatus",  "label": "Refund status",       "type": "text" },
+    { "name": "createdDate",   "label": "Created date",        "type": "date" },
+    { "name": "acceptDate",    "label": "Accept date",         "type": "date" },
+    { "name": "comments",      "label": "Comments",            "type": "text" },
+    { "name": "agentId",       "label": "Agent ID",            "type": "text" }
+]

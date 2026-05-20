@@ -1,0 +1,52 @@
+/**
+ * INTERFACE: createPaymentLink
+ * OUTPUT: body.data — the full Paytm /link/create response
+ *
+ * Paste this into: Apps Editor → createPaymentLink → Interface tab
+ * Strip JSONC comments first.
+ *
+ * Paytm response structure: { head: {...}, body: { resultInfo, linkId, linkDetails } }
+ * NOTE: Verify field names against a real Paytm response before review submission.
+ */
+[
+    {
+        "name": "head",
+        "label": "Response head",
+        "type": "collection",
+        "spec": [
+            { "name": "responseTimestamp", "label": "Response timestamp", "type": "text" },
+            { "name": "clientId",          "label": "Client ID",          "type": "text" },
+            { "name": "version",           "label": "Version",            "type": "text" }
+        ]
+    },
+    {
+        "name": "body",
+        "label": "Response body",
+        "type": "collection",
+        "spec": [
+            {
+                "name": "resultInfo",
+                "label": "Result info",
+                "type": "collection",
+                "spec": [
+                    { "name": "resultStatus", "label": "Result status", "type": "text" },
+                    { "name": "resultCode",   "label": "Result code",   "type": "text" },
+                    { "name": "resultMsg",    "label": "Result message", "type": "text" }
+                ]
+            },
+            { "name": "linkId", "label": "Link ID", "type": "text" },
+            {
+                "name": "linkDetails",
+                "label": "Link details",
+                "type": "collection",
+                "spec": [
+                    { "name": "linkUrl",   "label": "Payment URL", "type": "url"  },
+                    { "name": "amount",    "label": "Amount",      "type": "text" },
+                    { "name": "linkType",  "label": "Link type",   "type": "text" },
+                    { "name": "linkName",  "label": "Link name",   "type": "text" },
+                    { "name": "expiryDate","label": "Expiry date", "type": "date" }
+                ]
+            }
+        ]
+    }
+]

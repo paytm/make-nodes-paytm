@@ -16,7 +16,6 @@
     "url": "{{connection.baseUrl}}/integration/makeApiCall?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {

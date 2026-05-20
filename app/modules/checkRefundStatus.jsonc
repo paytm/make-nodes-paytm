@@ -12,7 +12,6 @@
     "url": "{{connection.baseUrl}}/integration/checkRefundStatus?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {

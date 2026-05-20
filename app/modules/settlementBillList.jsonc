@@ -20,7 +20,6 @@
     "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
@@ -30,7 +29,7 @@
             "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementBillId": "{{parameters.settlementBillId}}",
             "settleStatus": "{{parameters.settleStatus}}",
             "utrNo": "{{parameters.utrNo}}"

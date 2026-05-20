@@ -5,33 +5,43 @@
  * PROXY FUNCTION: createPaymentLink
  *
  * amount is required when linkType = FIXED; optional for GENERIC.
- * expiryDate format: YYYY-MM-DD HH:mm:ss
+ * expiryDate format expected by Paytm: DD/MM/YYYY
+ * customerContact is a nested object — customerName/Email/Mobile go inside it.
  *
  * RESPONSE STRUCTURE
  *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
+ *   data.body.linkId contains the created link ID on success.
  */
 {
     "url": "{{connection.baseUrl}}/integration/createPaymentLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
         "requestId": "{{formatDate(now; 'x')}}",
         "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
+            "mid": "{{connection.merchantId}}",
             "linkName": "{{parameters.linkName}}",
             "linkDescription": "{{parameters.linkDescription}}",
             "linkType": "{{parameters.linkType}}",
             "amount": "{{parameters.amount}}",
-            "customerName": "{{parameters.customerName}}",
-            "customerEmail": "{{parameters.customerEmail}}",
-            "customerMobile": "{{parameters.customerMobile}}",
-            "expiryDate": "{{formatDate(parameters.expiryDate; 'YYYY-MM-DD HH:mm:ss')}}",
+            "partialPayment": "{{parameters.partialPayment}}",
+            "bindLinkIdMobile": "{{parameters.bindLinkIdMobile}}",
+            "maxPaymentsAllowed": "{{parameters.maxPaymentsAllowed}}",
+            "customerContact": {
+                "customerName": "{{parameters.customerName}}",
+                "customerEmail": "{{parameters.customerEmail}}",
+                "customerMobile": "{{parameters.customerMobile}}"
+            },
             "sendSms": "{{parameters.sendSms}}",
-            "sendEmail": "{{parameters.sendEmail}}"
+            "sendEmail": "{{parameters.sendEmail}}",
+            "expiryDate": "{{formatDate(parameters.expiryDate; 'DD/MM/YYYY')}}",
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "customerId": "{{parameters.customerId}}",
+            "linkNotes": "{{parameters.linkNotes}}",
+            "statusCallbackUrl": "{{parameters.statusCallbackUrl}}"
         }
     },
     "response": {

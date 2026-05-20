@@ -15,7 +15,6 @@
     "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
@@ -25,7 +24,7 @@
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementOrderId": "{{parameters.settlementOrderId}}"
         }
     },

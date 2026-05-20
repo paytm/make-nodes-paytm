@@ -12,7 +12,6 @@
     "url": "{{connection.baseUrl}}/integration/fetchRefundList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
@@ -22,7 +21,7 @@
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "isSort": "{{ifempty(parameters.isSort; true)}}"
         }
     },

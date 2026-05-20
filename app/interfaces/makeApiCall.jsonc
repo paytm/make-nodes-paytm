@@ -1,0 +1,19 @@
+/**
+ * INTERFACE: makeApiCall
+ * OUTPUT: body.data — the raw Paytm API response for the called endpoint
+ *
+ * Paste this into: Apps Editor → makeApiCall → Interface tab
+ * Strip JSONC comments first.
+ *
+ * This is a universal module — the response structure varies per endpoint.
+ * Define only the proxy envelope fields here. The inner Paytm response
+ * (body.data) is left as an untyped collection so users can access any
+ * field via the bundle mapping UI.
+ */
+[
+    {
+        "name": "data",
+        "label": "Paytm response",
+        "type": "any"
+    }
+]

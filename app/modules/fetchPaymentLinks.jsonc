@@ -16,7 +16,6 @@
     "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
         "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
@@ -29,7 +28,8 @@
             "merchantRequestId": "{{parameters.merchantRequestId}}",
             "linkType": "{{parameters.linkType}}",
             "paymentStatus": "{{parameters.paymentStatus}}",
-            "isActive": "{{parameters.isActive}}"
+            "isActive": "{{parameters.isActive}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}"
         }
     },
     "response": {

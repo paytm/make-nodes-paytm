@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Make App Review — Action Items (Paytm)</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22253a;
+    --border: #2e3148;
+    --text: #e2e4ef;
+    --muted: #8b8fa8;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+    --pink: #f472b6;
+    --code-bg: #12141e;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 0 0 80px;
+  }
+  /* HEADER */
+  .page-header {
+    background: linear-gradient(135deg, #1a1d27 0%, #22253a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+  .page-header .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .header-meta { display: flex; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
+  .stat-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px;
+  }
+  .stat-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-green { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-red { background: var(--red); }
+  .dot-blue { background: var(--blue); }
+
+  /* LAYOUT */
+  .content { max-width: 1200px; margin: 0 auto; padding: 40px 48px; }
+
+  /* SECTION */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  details[open] { border-color: var(--accent); }
+  summary {
+    padding: 18px 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    list-style: none;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: '›';
+    margin-left: auto;
+    font-size: 18px;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+  details[open] summary::after { transform: rotate(90deg); }
+  .section-body { padding: 0 24px 24px; }
+
+  /* SECTION HEADER ICONS & LABELS */
+  .sec-icon {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .sec-green { background: rgba(52,211,153,.15); color: var(--green); }
+  .sec-yellow { background: rgba(251,191,36,.15); color: var(--yellow); }
+  .sec-red { background: rgba(248,113,113,.15); color: var(--red); }
+  .sec-blue { background: rgba(96,165,250,.15); color: var(--blue); }
+  .sec-purple { background: rgba(108,99,255,.15); color: var(--accent2); }
+  .sec-orange { background: rgba(251,146,60,.15); color: var(--orange); }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 4px; font-size: 11px;
+    font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .badge-done  { background: rgba(52,211,153,.15); color: var(--green);  border: 1px solid rgba(52,211,153,.3);  }
+  .badge-todo  { background: rgba(251,191,36,.15);  color: var(--yellow); border: 1px solid rgba(251,191,36,.3);  }
+  .badge-block { background: rgba(248,113,113,.15); color: var(--red);    border: 1px solid rgba(248,113,113,.3);  }
+  .badge-info  { background: rgba(96,165,250,.15);  color: var(--blue);   border: 1px solid rgba(96,165,250,.3);  }
+  .badge-p0    { background: rgba(248,113,113,.2);  color: var(--red);    border: 1px solid rgba(248,113,113,.4);  }
+  .badge-p1    { background: rgba(251,191,36,.2);   color: var(--yellow); border: 1px solid rgba(251,191,36,.4);  }
+  .badge-p2    { background: rgba(96,165,250,.2);   color: var(--blue);   border: 1px solid rgba(96,165,250,.4);  }
+  .badge-manual { background: rgba(167,139,250,.15); color: var(--accent2); border: 1px solid rgba(167,139,250,.3); }
+  .badge-code   { background: rgba(251,146,60,.15); color: var(--orange); border: 1px solid rgba(251,146,60,.3);  }
+
+  /* CHECKLIST */
+  .checklist { list-style: none; margin-top: 16px; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li .check {
+    width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+    margin-top: 1px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .check-done   { background: rgba(52,211,153,.2);  border: 1px solid rgba(52,211,153,.5);  color: var(--green);  }
+  .check-todo   { background: rgba(251,191,36,.1);  border: 1px solid rgba(251,191,36,.4);  color: transparent;   }
+  .check-block  { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.4); color: transparent;   }
+  .check-todo::after   { content: ''; }
+  .check-block::after  { content: ''; }
+  .check-done::after   { content: '✓'; }
+  .ci-text { flex: 1; line-height: 1.5; }
+  .ci-text strong { color: var(--text); display: block; margin-bottom: 2px; }
+  .ci-text span { color: var(--muted); font-size: 12px; }
+  .ci-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; flex-shrink: 0; }
+
+  /* TABLES */
+  .param-table-wrap { overflow-x: auto; margin-top: 16px; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12.5px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  thead tr { background: var(--surface2); }
+  th {
+    text-align: left; padding: 10px 14px;
+    color: var(--muted); font-weight: 600;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(108,99,255,.04); }
+  .req-yes { color: var(--red); font-weight: 600; }
+  .req-no  { color: var(--muted); }
+  .type-tag {
+    display: inline-block; padding: 1px 7px; border-radius: 3px;
+    font-size: 11px; font-weight: 600;
+  }
+  .type-text   { background: rgba(96,165,250,.12);  color: var(--blue);   }
+  .type-num    { background: rgba(52,211,153,.12);  color: var(--green);  }
+  .type-bool   { background: rgba(251,146,60,.12);  color: var(--orange); }
+  .type-date   { background: rgba(167,139,250,.12); color: var(--accent2);}
+  .type-select { background: rgba(244,114,182,.12); color: var(--pink);   }
+  .type-url    { background: rgba(251,191,36,.12);  color: var(--yellow); }
+
+  code {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 3px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px; color: var(--accent2);
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px;
+    color: #c9d1d9; line-height: 1.6; margin-top: 12px;
+  }
+
+  /* MODULE CARD */
+  .module-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 20px; overflow: hidden;
+  }
+  .module-card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    background: rgba(108,99,255,.05);
+  }
+  .module-card-header h4 { font-size: 14px; font-weight: 700; }
+  .module-card-body { padding: 16px 18px; }
+  .module-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* CALLOUT */
+  .callout {
+    border-left: 3px solid;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px; margin: 12px 0; font-size: 13px;
+  }
+  .callout-warn { background: rgba(251,191,36,.06); border-color: var(--yellow); color: #fef3c7; }
+  .callout-info { background: rgba(96,165,250,.06); border-color: var(--blue); color: #dbeafe; }
+  .callout-block { background: rgba(248,113,113,.06); border-color: var(--red); color: #fee2e2; }
+  .callout-done  { background: rgba(52,211,153,.06); border-color: var(--green); color: #d1fae5; }
+  .callout strong { font-weight: 700; }
+
+  /* MISC */
+  h3 { font-size: 14px; font-weight: 700; color: var(--accent2); margin: 20px 0 10px; }
+  h2 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em;
+       text-transform: uppercase; margin: 28px 0 10px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .muted { color: var(--muted); }
+  .highlight { color: var(--accent2); font-weight: 600; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+  .info-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .info-card label { font-size: 11px; color: var(--muted); font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .info-card p { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Make App — Paytm · Review Readiness Checklist</h1>
+  <div class="subtitle">PG-4647 · All items required before staging deploy + Make app review submission</div>
+  <div class="header-meta">
+    <div class="stat-pill"><div class="dot dot-green"></div> 9 done (code fixes)</div>
+    <div class="stat-pill"><div class="dot dot-yellow"></div> 28 pending (Make App Editor)</div>
+    <div class="stat-pill"><div class="dot dot-red"></div> 3 blocked (need valid staging MID)</div>
+    <div class="stat-pill"><div class="dot dot-blue"></div> 2 deployment prerequisites</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ─────────────────────────────────────────────────────── SECTION 0: DONE -->
+<details open>
+  <summary>
+    <div class="sec-icon sec-green">✓</div>
+    Code Fixes — Already Done
+    <span class="badge badge-done" style="margin-left:8px;">9 items</span>
+  </summary>
+  <div class="section-body">
+    <ul class="checklist">
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Created <code>app/base.jsonc</code></strong><span>Content-Type header, <code>[{{statusCode}}] {{body.error}}</code> error handler, <code>log.sanitize: ["request.headers.X-Signature"]</code></span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Removed <code>Content-Type</code> from all 14 module JSONC files</strong><span>Now inherited from base. Each module only has <code>X-Signature</code> in headers.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Added <code>limit</code> parameter to 6 search modules</strong><span>fetchPaymentLinks, fetchTransactionsForLink: added <code>pageSize: {{ifempty(parameters.limit; 20)}}</code>. fetchOrderList, fetchRefundList, settlementBillList, settlementTxnListByDate: renamed <code>parameters.pageSize</code> → <code>parameters.limit</code>.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Connection: added <code>response.error.message</code> and <code>log.sanitize</code></strong><span>Error message shows <code>[{{statusCode}}] {{body.error}}</code>. X-Signature sanitized in logs.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Removed debug HMAC log from <code>MakeAuthResolver.java</code></strong><span>5-line block that logged first 8 chars of expected/received HMAC was removed. File: <code>merchant-adapter/.../make/execute/MakeAuthResolver.java</code></span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Deleted <code>test-qa5.sh</code></strong><span>Test script used during QA5 validation. Must not be present in the repo before merge.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Fixed all URL references in <code>README.md</code></strong><span>Changed <code>/make/{fn}</code> → <code>/integration/{fn}</code> in architecture diagram, module template, connection validation description, and new-module guide.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>Case-insensitive route lookup in <code>MakeExecuteService.java</code></strong><span>Spring relaxed binding lowercases env-var map keys. Service now falls back to a case-insensitive scan when direct lookup fails.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+      <li>
+        <div class="check check-done">✓</div>
+        <div class="ci-text"><strong>HTTP 4xx passthrough in <code>MakeExecuteService.java</code></strong><span>Catches <code>HttpClientErrorException</code> separately and passes Paytm's error body as <code>data</code> instead of returning <code>status: FAILED</code>.</span></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE</span><span class="badge badge-code">CODE</span></div>
+      </li>
+    </ul>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 1: APP LEVEL -->
+<details open>
+  <summary>
+    <div class="sec-icon sec-yellow">◎</div>
+    Make App Editor — App Level Metadata
+    <span class="badge badge-todo" style="margin-left:8px;">4 items</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-warn">
+      <strong>Where to find this:</strong> Make Apps Editor → <em>Paytm</em> app → <strong>General</strong> tab.
+    </div>
+
+    <div class="grid2">
+      <div class="info-card">
+        <label>App Name</label>
+        <p>Must match the Paytm brand exactly. Recommended: <code>Paytm</code></p>
+      </div>
+      <div class="info-card">
+        <label>Short Description (≤ 160 chars)</label>
+        <p>Suggested: <em>"Automate Paytm merchant operations — manage payment links, refunds, orders, settlements, and subscriptions via the Paytm Payment Gateway."</em></p>
+      </div>
+      <div class="info-card">
+        <label>Privacy Policy URL</label>
+        <p>Required by Make. Use Paytm/PPSL privacy page URL. Must be publicly accessible. Example: <code>https://paytm.com/privacy-policy</code></p>
+      </div>
+      <div class="info-card">
+        <label>Category</label>
+        <p>Select <strong>Finance</strong> or <strong>Payments</strong>. Do not leave as default.</p>
+      </div>
+    </div>
+
+    <ul class="checklist" style="margin-top:20px;">
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>App icon uploaded</strong><span>512 × 512 px or 1024 × 1024 px PNG. No rounded corners — Make adds them. No transparency issues. Must use the official Paytm logo on a solid background (not a white square with a cropped logo).</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>App name set</strong><span>Confirm it is <code>Paytm</code> (not <code>PayTM</code>, <code>paytm</code>, or <code>Paytm Merchant</code>). Reviewers check brand consistency.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Short description filled</strong><span>Sentence case. ≤ 160 chars. Must describe what the app does for the merchant (not internal architecture). See suggested text above.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Privacy policy URL set</strong><span>Must be a live, publicly reachable URL. Make reviewers open it. Cannot be a placeholder or localhost URL.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+    </ul>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 2: CONNECTION -->
+<details open>
+  <summary>
+    <div class="sec-icon sec-yellow">🔗</div>
+    Make App Editor — Connection
+    <span class="badge badge-todo" style="margin-left:8px;">5 items</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-warn">
+      <strong>Where:</strong> Apps Editor → Paytm → <strong>Connections</strong> → <em>Paytm Merchant</em> → <strong>Parameters</strong> tab (for the 3 form fields) and <strong>Communication</strong> tab (JSONC already updated in code).
+    </div>
+
+    <h3>Parameters tab — define these 3 form fields exactly</h3>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>Name (internal key)</th><th>Label (UI, sentence case)</th><th>Type</th><th>Required</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>merchantId</code></td>
+            <td>Merchant ID</td>
+            <td><span class="type-tag type-text">text</span></td>
+            <td class="req-yes">Yes</td>
+            <td>Paytm MID assigned to the merchant. Passed as <code>?mid=</code> on every request. Add help text: <em>"Your Paytm Merchant ID (MID). Find it in the Paytm Merchant Dashboard under Account &gt; Profile."</em></td>
+          </tr>
+          <tr>
+            <td><code>keySecret</code></td>
+            <td>Key secret</td>
+            <td><span class="type-tag type-text">password</span></td>
+            <td class="req-yes">Yes</td>
+            <td>Must be <code>password</code> type — Make masks it after save and never displays it again. Used to compute HMAC-SHA256 for proxy authentication. Help text: <em>"Your Paytm Merchant Key. Find it in Paytm Dashboard under API Keys."</em></td>
+          </tr>
+          <tr>
+            <td><code>baseUrl</code></td>
+            <td>Environment</td>
+            <td><span class="type-tag type-select">select</span></td>
+            <td class="req-yes">Yes</td>
+            <td>Select type. Options below. Values are the merchant-adapter proxy host (without trailing slash). <strong>Production and Staging URLs must be confirmed with the platform team — they are not the Paytm securegw URLs.</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3><code>baseUrl</code> select option values</h3>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>Label</th><th>Value</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>QA5</td>
+            <td><code>https://pgp-qa5.paytm.in/merchant-adapter</code></td>
+            <td><span class="badge badge-done">VERIFIED ✓</span></td>
+          </tr>
+          <tr>
+            <td>Staging</td>
+            <td><em>TBD — get from platform team</em></td>
+            <td><span class="badge badge-todo">NEEDS URL</span></td>
+          </tr>
+          <tr>
+            <td>Production</td>
+            <td><em>TBD — get from platform team</em></td>
+            <td><span class="badge badge-todo">NEEDS URL</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-block" style="margin-top:12px;">
+      <strong>Important:</strong> These values are the <em>merchant-adapter proxy</em> host URLs, not Paytm's public API URLs (<code>securegw.paytm.in</code>). The connection JSONC comment previously had the wrong URLs. Confirm the actual prod/staging proxy hostnames before filling these in.
+    </div>
+
+    <ul class="checklist" style="margin-top:20px;">
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Define 3 parameters in the Parameters tab</strong><span>merchantId (text, required), keySecret (password, required), baseUrl (select, required)</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Set <code>baseUrl</code> select options with correct proxy URLs</strong><span>QA5 URL is confirmed. Production and Staging need the real merchant-adapter host from the infra/platform team.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Paste updated <code>paytm.jsonc</code> into Communication tab</strong><span>The JSONC was updated with <code>response.error.message</code> and <code>log.sanitize</code>. Strip JSONC comments before pasting. Use the <code>scripts/validate-jsonc.sh</code> helper.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Test the connection validation</strong><span>Click "Establish connection" in Make using MID <code>qa12FU97229952596781</code> / key <code>joLPkdl#D5S_azH_</code> on QA5 base URL. Must return HTTP 200 (proxy accepts HMAC). The downstream Paytm response doesn't matter — only the proxy auth matters for connection validation.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Paste updated <code>base.jsonc</code> into Base → Communications tab</strong><span>The new <code>app/base.jsonc</code> must be pasted into the app-level Base section in Make App Editor (Apps Editor → [App] → Base → Communications). This is separate from the connection and module tabs.</span></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+      </li>
+    </ul>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 3: MODULES -->
+<details open>
+  <summary>
+    <div class="sec-icon sec-purple">⬡</div>
+    Make App Editor — All 14 Modules (Labels, Descriptions, Parameters)
+    <span class="badge badge-todo" style="margin-left:8px;">14 modules</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-info">
+      <strong>For each module:</strong> (1) set the label + description in the General tab, (2) define all parameters in the Parameters tab, (3) paste the updated JSONC (comment-stripped) in the Communication tab, (4) define output fields once you have real API response data.
+    </div>
+    <div class="callout callout-warn">
+      <strong>Naming rules Make reviewers enforce:</strong> Labels must be sentence case (<em>"Fetch payment links"</em> not <em>"fetchPaymentLinks"</em>). Parameter labels must be title-case with acronyms in caps (<em>"Link ID"</em>, <em>"Order ID"</em>, <em>"Customer mobile"</em>). Enum options must be human-readable (<em>"Fixed amount"</em>, <em>"Generic"</em>).
+    </div>
+
+    <!-- fetchPaymentLinks -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>fetchPaymentLinks</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /link/fetch</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta">
+          <span class="badge badge-todo">TODO</span>
+          <span class="badge badge-manual">MANUAL</span>
+          <span class="badge badge-p0">P0</span>
+        </div>
+        <div class="grid2">
+          <div class="info-card">
+            <label>Label</label>
+            <p>Search payment links</p>
+          </div>
+          <div class="info-card">
+            <label>Description</label>
+            <p>Returns a list of Paytm payment links for the merchant account, with optional date, status, and link type filters.</p>
+          </div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes / Options</th></tr></thead>
+            <tbody>
+              <tr><td><code>fromDate</code></td><td>From date</td><td><span class="type-tag type-date">date</span></td><td class="req-no">No</td><td>—</td><td>Sent to API as YYYY-MM-DD</td></tr>
+              <tr><td><code>toDate</code></td><td>To date</td><td><span class="type-tag type-date">date</span></td><td class="req-no">No</td><td>—</td><td>Sent to API as YYYY-MM-DD</td></tr>
+              <tr><td><code>linkId</code></td><td>Link ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter to a specific link</td></tr>
+              <tr><td><code>merchantRequestId</code></td><td>Merchant request ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter by your own request ID</td></tr>
+              <tr><td><code>linkType</code></td><td>Link type</td><td><span class="type-tag type-select">select</span></td><td class="req-no">No</td><td>—</td><td>Options: <code>FIXED</code> = "Fixed amount", <code>GENERIC</code> = "Generic (any amount)"</td></tr>
+              <tr><td><code>paymentStatus</code></td><td>Payment status</td><td><span class="type-tag type-select">select</span></td><td class="req-no">No</td><td>—</td><td>Options: CREATED, PENDING, SUCCESS, FAILED, EXPIRED</td></tr>
+              <tr><td><code>isActive</code></td><td>Active links only</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>True = return only active links</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>. Max value: check Paytm docs.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- fetchTransactionsForLink -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>fetchTransactionsForLink</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /link/fetchTransaction</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Search transactions for a payment link</p></div>
+          <div class="info-card"><label>Description</label><p>Returns all transactions made against a specific payment link ID, with optional date range filter.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>linkId</code></td><td>Link ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>The Paytm payment link ID to look up</td></tr>
+              <tr><td><code>searchStartDate</code></td><td>Start date</td><td><span class="type-tag type-date">date</span></td><td class="req-no">No</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>searchEndDate</code></td><td>End date</td><td><span class="type-tag type-date">date</span></td><td class="req-no">No</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>fetchAllTxns</code></td><td>Include all statuses</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>True = include pending and failed transactions</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- createPaymentLink -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>createPaymentLink</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /link/create</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Create payment link</p></div>
+          <div class="info-card"><label>Description</label><p>Creates a new Paytm payment link. Use FIXED type with an amount for fixed-price links, or GENERIC to let the customer enter any amount.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes / Options</th></tr></thead>
+            <tbody>
+              <tr><td><code>linkType</code></td><td>Link type</td><td><span class="type-tag type-select">select</span></td><td class="req-yes">Yes</td><td>—</td><td>Options: <code>FIXED</code> = "Fixed amount", <code>GENERIC</code> = "Generic (customer enters amount)"</td></tr>
+              <tr><td><code>amount</code></td><td>Amount</td><td><span class="type-tag type-text">text</span></td><td class="req-no">Conditional</td><td>—</td><td>Required when linkType = FIXED. Decimal string, e.g. <code>100.00</code>. INR only.</td></tr>
+              <tr><td><code>linkName</code></td><td>Link name</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Display name shown on the payment page</td></tr>
+              <tr><td><code>linkDescription</code></td><td>Description</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Description shown to the customer</td></tr>
+              <tr><td><code>expiryDate</code></td><td>Expiry date</td><td><span class="type-tag type-date">date</span></td><td class="req-no">No</td><td>—</td><td>Sent to Paytm as DD/MM/YYYY (IML converts automatically)</td></tr>
+              <tr><td><code>customerName</code></td><td>Customer name</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Goes inside <code>customerContact</code> in the Paytm request</td></tr>
+              <tr><td><code>customerEmail</code></td><td>Customer email</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Goes inside <code>customerContact</code></td></tr>
+              <tr><td><code>customerMobile</code></td><td>Customer mobile</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Goes inside <code>customerContact</code>. 10-digit mobile number.</td></tr>
+              <tr><td><code>sendSms</code></td><td>Send SMS</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>Send payment link to customer via SMS</td></tr>
+              <tr><td><code>sendEmail</code></td><td>Send email</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>Send payment link to customer via email</td></tr>
+              <tr><td><code>partialPayment</code></td><td>Allow partial payment</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>Allow customer to pay less than the full amount</td></tr>
+              <tr><td><code>bindLinkIdMobile</code></td><td>Bind to mobile</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>—</td><td>Bind the link to a specific customer mobile number</td></tr>
+              <tr><td><code>maxPaymentsAllowed</code></td><td>Max payments allowed</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>—</td><td>Maximum number of times the link can be paid</td></tr>
+              <tr><td><code>merchantRequestId</code></td><td>Merchant request ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Your idempotency key for this request</td></tr>
+              <tr><td><code>customerId</code></td><td>Customer ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Your internal customer identifier</td></tr>
+              <tr><td><code>linkNotes</code></td><td>Notes</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Internal notes — not shown to the customer</td></tr>
+              <tr><td><code>statusCallbackUrl</code></td><td>Webhook URL</td><td><span class="type-tag type-url">url</span></td><td class="req-no">No</td><td>—</td><td>Paytm will POST payment status updates to this URL</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- fetchOrderList -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>fetchOrderList</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /merchant-passbook/search/list/order/v2 · RTDD</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Search orders</p></div>
+          <div class="info-card"><label>Description</label><p>Returns a paginated list of orders within a date range. Filter by status, type, order ID, or payment mode.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes / Options</th></tr></thead>
+            <tbody>
+              <tr><td><code>startDate</code></td><td>Start date</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>endDate</code></td><td>End date</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>orderSearchStatus</code></td><td>Order status</td><td><span class="type-tag type-select">select</span></td><td class="req-no">No</td><td>ALL</td><td>Options: ALL, TXN_SUCCESS, TXN_FAILURE, PENDING</td></tr>
+              <tr><td><code>orderSearchType</code></td><td>Search type</td><td><span class="type-tag type-select">select</span></td><td class="req-no">No</td><td>TRANSACTION</td><td>Options: TRANSACTION, ORDER</td></tr>
+              <tr><td><code>pageNumber</code></td><td>Page number</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>1</td><td>Cursor for paginating through results manually</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>.</td></tr>
+              <tr><td><code>merchantOrderId</code></td><td>Merchant order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter to a specific order</td></tr>
+              <tr><td><code>payMode</code></td><td>Payment mode</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>e.g. <code>UPI</code>, <code>CARD</code>, <code>NB</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- orderDetail -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>orderDetail</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">RTDD via proxy</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Get order details</p></div>
+          <div class="info-card"><label>Description</label><p>Returns full details for a single order including transaction status, payment mode, and optionally settlement information.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>bizOrderId</code></td><td>Order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Your merchant order ID (bizOrderId in Paytm)</td></tr>
+              <tr><td><code>isSettlementInfo</code></td><td>Include settlement info</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>false</td><td>Include settlement details in the response</td></tr>
+              <tr><td><code>excludePaymentsData</code></td><td>Exclude payment attempts</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>false</td><td>Exclude individual payment attempt records from response</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- fetchRefundList -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>fetchRefundList</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /merchant-passbook/api/v1/refundList</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Search refunds</p></div>
+          <div class="info-card"><label>Description</label><p>Returns a paginated list of refunds within a date range.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>startDate</code></td><td>Start date</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>endDate</code></td><td>End date</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD</td></tr>
+              <tr><td><code>pageNum</code></td><td>Page number</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>1</td><td>Cursor for manual pagination</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>.</td></tr>
+              <tr><td><code>isSort</code></td><td>Sort by date descending</td><td><span class="type-tag type-bool">boolean</span></td><td class="req-no">No</td><td>true</td><td>Sort results newest first</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- checkRefundStatus -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>checkRefundStatus</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /v2/refund/status</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Get refund status</p></div>
+          <div class="info-card"><label>Description</label><p>Returns the current status of a specific refund by order ID and refund reference ID.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>orderId</code></td><td>Order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Order ID of the original transaction</td></tr>
+              <tr><td><code>refId</code></td><td>Refund reference ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Unique refund reference ID (same ID used when the refund was created)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- initiateRefund -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>initiateRefund</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /refund/apply</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Initiate refund</p></div>
+          <div class="info-card"><label>Description</label><p>Initiates a refund against a completed Paytm transaction. The refund reference ID (refId) must be unique per refund request and is used for idempotency.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>orderId</code></td><td>Order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Order ID of the original transaction to refund</td></tr>
+              <tr><td><code>txnId</code></td><td>Transaction ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Paytm transaction ID (TXNID from the original payment)</td></tr>
+              <tr><td><code>refId</code></td><td>Refund reference ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Your unique idempotency key for this refund. Reusing the same refId returns the original refund result.</td></tr>
+              <tr><td><code>refundAmount</code></td><td>Refund amount</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Amount to refund in INR. Must be ≤ original transaction amount. Decimal string, e.g. <code>50.00</code>.</td></tr>
+              <tr><td><code>comments</code></td><td>Reason</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Reason for the refund (for your records)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- settlementBillList -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>settlementBillList</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">RTDD via proxy</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Search settlement bills</p></div>
+          <div class="info-card"><label>Description</label><p>Returns a paginated list of settlement bills (payouts) within a time window. Maximum 50 results per page.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes / Options</th></tr></thead>
+            <tbody>
+              <tr><td><code>settlementStartTime</code></td><td>Settlement start time</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD HH:mm:ss. Note: field name is <em>not</em> startDate.</td></tr>
+              <tr><td><code>settlementEndTime</code></td><td>Settlement end time</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD HH:mm:ss. Note: field name is <em>not</em> endDate.</td></tr>
+              <tr><td><code>pageNum</code></td><td>Page number</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>1</td><td>Cursor for manual pagination</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>. Hard cap of 50 by Paytm API.</td></tr>
+              <tr><td><code>settlementBillId</code></td><td>Settlement bill ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter to a specific settlement bill</td></tr>
+              <tr><td><code>settleStatus</code></td><td>Settlement status</td><td><span class="type-tag type-select">select</span></td><td class="req-no">No</td><td>—</td><td>Options: BANK_INITIATED, PAYOUT_SETTLED, PAYOUT_UNSETTLED, WAIT_FOR_SETTLE</td></tr>
+              <tr><td><code>utrNo</code></td><td>UTR number</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter by bank UTR reference number</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- settlementTxnListByDate -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-info">SEARCH</span>
+        <h4>settlementTxnListByDate</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">RTDD via proxy</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Search settled transactions</p></div>
+          <div class="info-card"><label>Description</label><p>Returns a paginated list of settled transactions within a date range. Optionally filter by settlement order ID.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>startDate</code></td><td>Start date and time</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD HH:mm:ss</td></tr>
+              <tr><td><code>endDate</code></td><td>End date and time</td><td><span class="type-tag type-date">date</span></td><td class="req-yes">Yes</td><td>—</td><td>Sent as YYYY-MM-DD HH:mm:ss</td></tr>
+              <tr><td><code>pageNum</code></td><td>Page number</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>1</td><td>Cursor for manual pagination</td></tr>
+              <tr><td><code>limit</code></td><td>Maximum results</td><td><span class="type-tag type-num">number</span></td><td class="req-no">No</td><td>20</td><td><strong>Required by Make review.</strong> Maps to Paytm <code>pageSize</code>.</td></tr>
+              <tr><td><code>settlementOrderId</code></td><td>Settlement order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Filter to a specific settlement order</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- fetchSubscriptionStatus -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>fetchSubscriptionStatus</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /subscription/subscription/checkStatus</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Get subscription status</p></div>
+          <div class="info-card"><label>Description</label><p>Returns the current status of a Paytm subscription. Provide at least one of: subscription ID, order ID, link ID, or customer ID.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>subsId</code></td><td>Subscription ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">Conditional</td><td>—</td><td>At least one of subsId, orderId, linkId, or custId must be provided</td></tr>
+              <tr><td><code>orderId</code></td><td>Order ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">Conditional</td><td>—</td><td></td></tr>
+              <tr><td><code>linkId</code></td><td>Link ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">Conditional</td><td>—</td><td></td></tr>
+              <tr><td><code>custId</code></td><td>Customer ID</td><td><span class="type-tag type-text">text</span></td><td class="req-no">Conditional</td><td>—</td><td>Your internal customer identifier</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- pauseResumeSubscription -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>pauseResumeSubscription</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /subscription/subscription/status/modify</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Pause or resume subscription</p></div>
+          <div class="info-card"><label>Description</label><p>Pauses (suspends) or resumes an active Paytm subscription. Set status to SUSPENDED to pause, or ACTIVE to resume.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes / Options</th></tr></thead>
+            <tbody>
+              <tr><td><code>subsId</code></td><td>Subscription ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>The Paytm subscription ID to modify</td></tr>
+              <tr><td><code>status</code></td><td>Action</td><td><span class="type-tag type-select">select</span></td><td class="req-yes">Yes</td><td>—</td><td>Options: <code>SUSPENDED</code> = "Pause", <code>ACTIVE</code> = "Resume"</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- cancelSubscription -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-done" style="background:rgba(52,211,153,.15);color:var(--green);">ACTION</span>
+        <h4>cancelSubscription</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">POST /subscription/subscription/cancel</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Cancel subscription</p></div>
+          <div class="info-card"><label>Description</label><p>Permanently cancels a Paytm subscription. This action cannot be undone.</p></div>
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>subsId</code></td><td>Subscription ID</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>The Paytm subscription ID to cancel</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- makeApiCall -->
+    <div class="module-card">
+      <div class="module-card-header">
+        <span class="badge badge-p0" style="background:rgba(167,139,250,.15);color:var(--accent2);border-color:rgba(167,139,250,.4);">UNIVERSAL</span>
+        <h4>makeApiCall</h4>
+        <span style="color:var(--muted);font-size:12px;margin-left:auto;">Required by Make platform — one per app</span>
+      </div>
+      <div class="module-card-body">
+        <div class="module-meta"><span class="badge badge-todo">TODO</span><span class="badge badge-manual">MANUAL</span><span class="badge badge-p0">P0</span></div>
+        <div class="grid2">
+          <div class="info-card"><label>Label</label><p>Make an API call</p></div>
+          <div class="info-card"><label>Description</label><p>Sends a custom signed request to any Paytm API endpoint via the proxy. Provide a relative path — the proxy prepends the Paytm base URL and signs the request.</p></div>
+        </div>
+        <div class="callout callout-warn">
+          <strong>URL parameter must be relative path only</strong> — e.g. <code>/link/fetch</code> not <code>https://securegw.paytm.in/link/fetch</code>. Make rejects absolute URLs in Universal modules. Add this note to the parameter description.
+        </div>
+        <div class="param-table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Label</th><th>Type</th><th>Required</th><th>Default</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><code>url</code></td><td>Relative path</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Relative Paytm API path (e.g. <code>/link/fetch</code>). The proxy prepends the base URL.</td></tr>
+              <tr><td><code>method</code></td><td>HTTP method</td><td><span class="type-tag type-text">text</span></td><td class="req-yes">Yes</td><td>—</td><td>Always <code>POST</code> for Paytm APIs</td></tr>
+              <tr><td><code>headers</code></td><td>Additional headers</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Extra headers as JSON string</td></tr>
+              <tr><td><code>body</code></td><td>Request body</td><td><span class="type-tag type-text">text</span></td><td class="req-no">No</td><td>—</td><td>Request body as JSON string (the params object)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info" style="margin-top:20px;">
+      <strong>For every module above:</strong> After filling in labels/descriptions/parameters, paste the corresponding updated <code>.jsonc</code> file (comment-stripped) into the Communication tab. Use <code>scripts/validate-jsonc.sh</code> to strip comments.
+    </div>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 4: OUTPUT FIELDS -->
+<details>
+  <summary>
+    <div class="sec-icon sec-orange">⊟</div>
+    Make App Editor — Output Field Definitions (all 14 modules)
+    <span class="badge badge-done" style="margin-left:8px;">JSONC created ✓</span>
+    <span class="badge badge-todo" style="margin-left:4px;">Verify with real response</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-done">
+      <strong>JSONC files created:</strong> <code>app/interfaces/*.jsonc</code> — one file per module. Paste each into the Interface tab in Make App Editor (strip JSONC comments first). Field names are derived from Paytm API documentation and must be verified against real API responses when a valid staging MID is available.
+    </div>
+    <div class="callout callout-info">
+      <strong>Where:</strong> Apps Editor → [Module] → <strong>Interface</strong> tab (or Output tab). Each field has: name, label, type (text/number/boolean/date/collection/array). Nested objects require collection type with sub-fields.
+    </div>
+    <div class="callout callout-warn">
+      <strong>What reviewers check:</strong> If output fields are undefined, users cannot map the response data to other modules in a scenario. This is a hard requirement — every module must have output fields defined. Even partial definitions (e.g., just the top-level fields) are acceptable for initial review.
+    </div>
+
+    <h3>Minimum output fields to define (from proxy response envelope)</h3>
+    <p style="color:var(--muted);margin-bottom:12px;font-size:13px;">Every module returns <code>body.data</code> which is the raw Paytm API response. At minimum define these top-level proxy envelope fields:</p>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>Field name</th><th>Label</th><th>Type</th><th>Applies to</th></tr></thead>
+        <tbody>
+          <tr><td><code>status</code></td><td>Proxy status</td><td><span class="type-tag type-text">text</span></td><td>All modules</td></tr>
+          <tr><td><code>function</code></td><td>Function name</td><td><span class="type-tag type-text">text</span></td><td>All modules</td></tr>
+          <tr><td><code>requestId</code></td><td>Request ID</td><td><span class="type-tag type-text">text</span></td><td>All modules</td></tr>
+          <tr><td><code>data</code></td><td>Paytm response</td><td><span class="type-tag type-text">collection</span></td><td>All modules — add sub-fields based on Paytm API docs per module</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Module-specific iterate paths (Search modules)</h3>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>Iterate path in IML</th><th>Item type</th></tr></thead>
+        <tbody>
+          <tr><td><code>fetchPaymentLinks</code></td><td><code>body.data.linkDetailsList</code></td><td>Payment link object</td></tr>
+          <tr><td><code>fetchTransactionsForLink</code></td><td><code>body.data.txnDetailsList</code></td><td>Transaction object</td></tr>
+          <tr><td><code>fetchOrderList</code></td><td><code>body.data.body.txn</code></td><td>Order/transaction object</td></tr>
+          <tr><td><code>fetchRefundList</code></td><td><code>body.data.refundDetailList</code></td><td>Refund object</td></tr>
+          <tr><td><code>settlementBillList</code></td><td><code>body.data.body.settleBillList</code></td><td>Settlement bill object</td></tr>
+          <tr><td><code>settlementTxnListByDate</code></td><td><code>body.data.body.txnList</code></td><td>Settled transaction object</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-warn" style="margin-top:12px;">
+      <strong>All iterate paths need E2E verification</strong> — they were derived from Paytm API docs and may differ from the actual proxied response. Test each one with a real API call and adjust as needed.
+    </div>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 5: TEST SCENARIOS -->
+<details>
+  <summary>
+    <div class="sec-icon sec-red">⚠</div>
+    Test Scenarios — Blocked on Valid Staging MID
+    <span class="badge badge-block" style="margin-left:8px;">BLOCKED</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0 gate</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-block">
+      <strong>Hard blocker:</strong> Make reviewers run test scenarios during the review process. Without at least one passing scenario per module, the app will be rejected. All scenarios require a live connection to a real Paytm environment (staging preferred). MID <code>qa12FU97229952596781</code> works for proxy auth validation but is not onboarded on Paytm staging for payment links or subscriptions.
+    </div>
+    <div class="callout callout-info">
+      <strong>What you need from the Paytm team:</strong> A MID that is onboarded on the Paytm staging environment (<code>securestage.paytmpayments.com</code>) with active payment links, subscriptions, and at least one completed order. Ask for test data: a linkId, an orderId with a completed txn, and a subsId.
+    </div>
+
+    <h3>Required scenarios (17 total)</h3>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Scenario name</th><th>Module(s)</th><th>What it tests</th><th>Needs</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>List payment links</td><td>fetchPaymentLinks</td><td>Happy path — returns list of links</td><td>Active links on staging MID</td></tr>
+          <tr><td>2</td><td>Create payment link (fixed)</td><td>createPaymentLink</td><td>Creates a FIXED link with amount</td><td>Staging MID onboarded for link creation</td></tr>
+          <tr><td>3</td><td>Create payment link (generic)</td><td>createPaymentLink</td><td>Creates a GENERIC link (no amount)</td><td>Staging MID onboarded for link creation</td></tr>
+          <tr><td>4</td><td>Transactions for a link</td><td>fetchTransactionsForLink</td><td>Returns txns for a known linkId</td><td>linkId with at least one transaction</td></tr>
+          <tr><td>5</td><td>List orders</td><td>fetchOrderList</td><td>Returns orders for a date range</td><td>At least one completed order</td></tr>
+          <tr><td>6</td><td>Order details</td><td>orderDetail</td><td>Returns full detail for one order</td><td>A known bizOrderId</td></tr>
+          <tr><td>7</td><td>List refunds</td><td>fetchRefundList</td><td>Returns refunds for a date range</td><td>At least one refund on the MID</td></tr>
+          <tr><td>8</td><td>Initiate refund</td><td>initiateRefund</td><td>Initiates a partial refund</td><td>An orderId with a completed txnId and sufficient balance</td></tr>
+          <tr><td>9</td><td>Refund status</td><td>checkRefundStatus</td><td>Returns status of a known refund</td><td>orderId + refId from scenario 8</td></tr>
+          <tr><td>10</td><td>Settlement bills</td><td>settlementBillList</td><td>Returns settlement payouts</td><td>At least one settlement period</td></tr>
+          <tr><td>11</td><td>Settled transactions</td><td>settlementTxnListByDate</td><td>Returns settled txns by date</td><td>At least one settled transaction</td></tr>
+          <tr><td>12</td><td>Subscription status</td><td>fetchSubscriptionStatus</td><td>Returns status of a known subscription</td><td>A known subsId</td></tr>
+          <tr><td>13</td><td>Pause subscription</td><td>pauseResumeSubscription</td><td>Sets status = SUSPENDED</td><td>An ACTIVE subsId</td></tr>
+          <tr><td>14</td><td>Resume subscription</td><td>pauseResumeSubscription</td><td>Sets status = ACTIVE</td><td>A SUSPENDED subsId (use result of scenario 13)</td></tr>
+          <tr><td>15</td><td>Cancel subscription</td><td>cancelSubscription</td><td>Cancels a subscription</td><td>A disposable ACTIVE subsId</td></tr>
+          <tr><td>16</td><td>Custom API call</td><td>makeApiCall</td><td>Calls /link/fetch via universal module</td><td>Any active connection</td></tr>
+          <tr><td>17</td><td>Error handling</td><td>Any module</td><td><strong>Required error scenario</strong> — show that invalid input returns a meaningful error message (not a crash). Use a non-existent orderId or refId.</td><td>Any connection, intentionally bad input</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Pagination test (required for Search modules)</h3>
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">For at least one Search module, run a scenario with <code>limit = 2</code> and verify that exactly 2 items are returned. This proves the limit parameter works correctly. Add the scenario log as execution evidence.</p>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 6: PAGINATION DECISION -->
+<details>
+  <summary>
+    <div class="sec-icon sec-blue">⇄</div>
+    Design Decision — Pagination Cursor for Search Modules
+    <span class="badge badge-todo" style="margin-left:8px;">DECIDE BEFORE REVIEW</span>
+    <span class="badge badge-p1" style="margin-left:4px;">P1</span>
+  </summary>
+  <div class="section-body">
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Four search modules send a <code>pageNum</code>/<code>pageNumber</code> cursor to the Paytm API. The JSONC files reference this as <code>parameters.pageNum</code>. A decision is needed on how users advance through pages.</p>
+
+    <div class="grid2">
+      <div class="info-card">
+        <label>Option A — Manual page number (current)</label>
+        <p style="font-size:13px;margin-top:4px;">Expose <code>pageNum</code> as a Number parameter in Make UI. Users set it manually or use a Make iterator to advance. Simple to implement but not how Make's native pagination works.</p>
+        <p style="color:var(--green);font-size:12px;margin-top:8px;">✓ Simplest. No IML changes. Just define the parameter.</p>
+      </div>
+      <div class="info-card">
+        <label>Option B — Make native cursor (recommended)</label>
+        <p style="font-size:13px;margin-top:4px;">Use Make's <code>cursor</code> bundle. The module returns the next page cursor and Make automatically calls the module again until exhausted. Requires IML changes to set <code>response.cursor</code> and read it back.</p>
+        <p style="color:var(--yellow);font-size:12px;margin-top:8px;">⚠ Requires IML work and E2E verification. Best UX but more complex.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn" style="margin-top:16px;">
+      <strong>Recommendation:</strong> Ship Option A (manual pageNum) for the first review submission. This unblocks review without IML changes. Add a help text note: <em>"Increase page number to get the next set of results."</em> Upgrade to Option B (cursor) in a follow-up iteration.
+    </div>
+
+    <h3>Modules requiring this decision</h3>
+    <div class="param-table-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>Paytm cursor field</th><th>Make parameter name</th></tr></thead>
+        <tbody>
+          <tr><td>fetchOrderList</td><td><code>pageNumber</code></td><td><code>pageNumber</code></td></tr>
+          <tr><td>fetchRefundList</td><td><code>pageNum</code></td><td><code>pageNum</code></td></tr>
+          <tr><td>settlementBillList</td><td><code>pageNum</code></td><td><code>pageNum</code></td></tr>
+          <tr><td>settlementTxnListByDate</td><td><code>pageNum</code></td><td><code>pageNum</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 7: DEPLOY -->
+<details>
+  <summary>
+    <div class="sec-icon sec-blue">🚀</div>
+    Staging Deployment Prerequisites
+    <span class="badge badge-todo" style="margin-left:8px;">2 items</span>
+    <span class="badge badge-p0" style="margin-left:4px;">P0</span>
+  </summary>
+  <div class="section-body">
+    <div class="callout callout-warn">
+      These must be done before Make can connect to the staging proxy. The QA5 deploy is already working — this section is for the <strong>staging environment</strong> deploy.
+    </div>
+    <ul class="checklist">
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text">
+          <strong>Add <code>MERCHANT_ADAPTER_MAKE_ENABLED: "true"</code> to staging Helm config</strong>
+          <span>File: <code>cicd_argocd/non-prod/project-pg/staging-pg-app-helm-chart/fatJar-services/merchant-adapter/values-config-staging.yaml</code> (exact path TBC). Without this, the proxy returns HTTP 404 on all Make requests. The property gate is checked first in <code>MakeExecuteService.execute()</code>.</span>
+        </div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-p0">P0</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text">
+          <strong>Update PVC-mounted properties file on staging with Make route properties</strong>
+          <span>The 6 RTDD routes (<code>fetchOrderList</code>, <code>orderDetail</code>, <code>settlementBillList</code>, <code>settlementTxnListByDate</code>, and any RTDD-signed routes) require <code>head</code> defaults that can only be set via the PVC-mounted <code>project-merchant-adapter-service.properties</code> file — not via simple env vars. Coordinate with the infra team to update the PVC-mounted file on staging with the equivalent of the QA5 YAML env vars, plus RTDD <code>head</code> fields. The 10 non-RTDD routes can be set via env vars (same pattern as QA5).</span>
+        </div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span><span class="badge badge-p0">P0</span></div>
+      </li>
+    </ul>
+  </div>
+</details>
+
+<!-- ─────────────────────────────────────────────────────── SECTION 8: FINAL CHECKLIST -->
+<details open>
+  <summary>
+    <div class="sec-icon sec-yellow">◈</div>
+    Submission Checklist — Final Gate Before Clicking "Submit for Review"
+  </summary>
+  <div class="section-body">
+    <ul class="checklist">
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>App name, description, icon, privacy policy, category are set</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong><code>base.jsonc</code> pasted into App Base → Communications</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Connection: 3 parameters defined, all baseUrl select values confirmed, JSONC pasted</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Connection test passes with a real staging or QA5 connection</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>All 14 modules have: label, description, parameters (typed + labeled), communication JSONC pasted</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>All 14 modules have output fields defined (even partial — top-level fields at minimum)</strong></div>
+        <div class="ci-badges"><span class="badge badge-block">BLOCKED MID</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>17 test scenarios created (1 per module + error scenario + pagination test)</strong></div>
+        <div class="ci-badges"><span class="badge badge-block">BLOCKED MID</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Pagination decision made and <code>pageNum</code> defined as a parameter in Make UI for 4 search modules</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>All JSONC files comment-stripped before pasting into Make (use <code>scripts/validate-jsonc.sh</code>)</strong></div>
+        <div class="ci-badges"><span class="badge badge-manual">MANUAL</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>No <code>Content-Type</code> header in any individual module communication (moved to base)</strong></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE IN CODE ✓</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>All 6 search modules have <code>limit</code> parameter in both JSONC and Make UI Parameters tab</strong></div>
+        <div class="ci-badges"><span class="badge badge-done">JSONC ✓</span><span class="badge badge-todo">UI TODO</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>Debug HMAC log removed from <code>MakeAuthResolver.java</code></strong></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE IN CODE ✓</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong><code>test-qa5.sh</code> deleted from repo</strong></div>
+        <div class="ci-badges"><span class="badge badge-done">DONE IN CODE ✓</span></div>
+      </li>
+      <li>
+        <div class="check check-todo"></div>
+        <div class="ci-text"><strong>make-nodes-paytm PR merged to main, merchant-adapter PR merged to release branch</strong></div>
+        <div class="ci-badges"><span class="badge badge-todo">TODO</span></div>
+      </li>
+    </ul>
+  </div>
+</details>
+
+</div><!-- /content -->
+
+<script>
+  // Make all details elements rememberable via localStorage
+  document.querySelectorAll('details').forEach(function(el, i) {
+    var key = 'detail_' + i;
+    var saved = localStorage.getItem(key);
+    if (saved === 'closed') el.removeAttribute('open');
+    el.addEventListener('toggle', function() {
+      localStorage.setItem(key, el.open ? 'open' : 'closed');
+    });
+  });
+</script>
+</body>
+</html>

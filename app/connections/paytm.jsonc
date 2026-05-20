@@ -54,6 +54,12 @@
     "response": {
         // HTTP 200 from proxy = HMAC accepted = credentials valid.
         // HTTP 401 = wrong keySecret. HTTP 404 = proxy not enabled.
-        "valid": "{{statusCode == 200}}"
+        "valid": "{{statusCode == 200}}",
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": ["request.headers.X-Signature"]
     }
 }
