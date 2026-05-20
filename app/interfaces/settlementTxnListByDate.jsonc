@@ -1,0 +1,21 @@
+/**
+ * INTERFACE: settlementTxnListByDate
+ * OUTPUT: one item from body.data.body.txnList (the iterate path)
+ *
+ * Paste this into: Apps Editor → settlementTxnListByDate → Interface tab
+ * Strip JSONC comments first.
+ *
+ * NOTE: Field names must be verified against a real Paytm RTDD settlement response.
+ */
+[
+    { "name": "txnId",             "label": "Transaction ID",      "type": "text" },
+    { "name": "orderId",           "label": "Order ID",            "type": "text" },
+    { "name": "txnAmount",         "label": "Transaction amount",  "type": "text" },
+    { "name": "settlementAmount",  "label": "Settlement amount",   "type": "text" },
+    { "name": "paymentMode",       "label": "Payment mode",        "type": "text" },
+    { "name": "txnDate",           "label": "Transaction date",    "type": "date" },
+    { "name": "settlementDate",    "label": "Settlement date",     "type": "date" },
+    { "name": "settlementOrderId", "label": "Settlement order ID", "type": "text" },
+    { "name": "utrNo",             "label": "UTR number",          "type": "text" },
+    { "name": "bankName",          "label": "Bank name",           "type": "text" }
+]

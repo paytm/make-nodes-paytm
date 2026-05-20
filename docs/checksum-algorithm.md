@@ -31,7 +31,7 @@ Reference implementation: `PaytmChecksum.java` in Paytm's Java SDK.
 
 ## Why Make IML Cannot Do This
 
-Make's IML crypto functions: `sha256()`, `hmac()`, `base64()`, `md5()`.
+Make's IML crypto functions include `sha256()` (with two arguments this is **HMAC-SHA256**), `base64()`, `md5()`, etc. There is no separate `hmac()` function — use `sha256(message; secret)`.
 
 Step 5 (SHA-256) is possible. Step 6 (AES-128-CBC encryption) is **not available in IML** — there is no `aes()` or `encrypt()` function.
 
@@ -45,11 +45,11 @@ Modules authenticate to the proxy using HMAC-SHA256 (which IML _can_ compute):
 
 ```jsonc
 "headers": {
-    "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+    "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
 },
 "body": {
-    "requestId": "{{uuid()}}",
-    "timestamp": "{{toTimestamp(now)}}",
+    "requestId": "{{formatDate(now; 'x')}}",
+    "timestamp": "{{formatDate(now; 'x')}}",
     "params": { ...module params... }
 }
 ```

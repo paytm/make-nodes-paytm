@@ -1,0 +1,25 @@
+/**
+ * INTERFACE: fetchOrderList
+ * OUTPUT: one item from body.data.body.txn (the iterate path)
+ *
+ * Paste this into: Apps Editor → fetchOrderList → Interface tab
+ * Strip JSONC comments first.
+ *
+ * NOTE: Field names must be verified against a real Paytm
+ *       /merchant-passbook/search/list/order/v2 response.
+ *       This endpoint uses the RTDD-signed envelope — verify the actual
+ *       field names in body.data.body.txn against a live response.
+ */
+[
+    { "name": "txnId",        "label": "Transaction ID",      "type": "text"  },
+    { "name": "orderId",      "label": "Order ID",            "type": "text"  },
+    { "name": "txnAmount",    "label": "Amount",              "type": "text"  },
+    { "name": "txnStatus",    "label": "Status",              "type": "text"  },
+    { "name": "paymentMode",  "label": "Payment mode",        "type": "text"  },
+    { "name": "txnDate",      "label": "Transaction date",    "type": "date"  },
+    { "name": "bankName",     "label": "Bank name",           "type": "text"  },
+    { "name": "bankTxnId",    "label": "Bank transaction ID", "type": "text"  },
+    { "name": "refundAmount", "label": "Refund amount",       "type": "text"  },
+    { "name": "custEmail",    "label": "Customer email",      "type": "email" },
+    { "name": "custMobile",   "label": "Customer mobile",     "type": "phone" }
+]

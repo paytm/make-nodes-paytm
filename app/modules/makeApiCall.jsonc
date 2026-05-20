@@ -13,15 +13,14 @@
  *   corresponding Paytm endpoint, applying the correct AES checksum.
  */
 {
-    "url": "{{connection.baseUrl}}/make/makeApiCall?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/makeApiCall?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "method": "{{parameters.method}}",
             "url": "{{parameters.url}}",

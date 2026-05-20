@@ -8,7 +8,7 @@
  * No checksum logic in IML.
  *
  * AUTH PATTERN (same for all modules)
- *   X-Signature = HMAC-SHA256(json(body), connection.keySecret)
+ *   X-Signature = HMAC-SHA256(createJSON(body), connection.keySecret)
  *   The proxy verifies this, then signs the downstream Paytm request.
  *
  * RESPONSE STRUCTURE
@@ -17,22 +17,21 @@
  *   Verify this path against the actual Paytm response during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchOrderList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
             "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
             "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
             "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "merchantOrderId": "{{parameters.merchantOrderId}}",
             "payMode": "{{parameters.payMode}}"
         }

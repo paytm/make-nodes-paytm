@@ -14,31 +14,31 @@ Official Paytm custom app for [Make](https://www.make.com) (formerly Integromat)
 All modules call the **merchant-adapter signing proxy**, not Paytm directly.
 
 ```
-Make module  →  proxy /make/{functionName}?mid=XXX  →  Paytm API
-              [HMAC-SHA256 inbound auth]           [AES checksum outbound]
+Make module  →  proxy /integration/{functionName}?mid=XXX  →  Paytm API
+              [HMAC-SHA256 inbound auth]                  [AES checksum outbound]
 ```
 
 Paytm's checksum algorithm (`AES-128-CBC(SHA256(sorted_values + salt) + salt, keySecret, IV)`) cannot be computed in Make IML — there is no `aes()` or `encrypt()` function. The proxy handles all Paytm signing server-side. Make modules only need to authenticate to the proxy via HMAC-SHA256, which IML can compute.
 
-**Proxy base URLs:**
+**Proxy base URLs** (`baseUrl` in the connection — the merchant-adapter host, without trailing slash):
 
-| Environment | Proxy URL |
-|-------------|-----------|
-| Production | `https://paytm-make-proxy.paytmpayments.com` |
-| Staging | `https://paytm-make-proxy-staging.paytmpayments.com` |
+| Environment | Proxy Base URL |
+|-------------|----------------|
+| Production | *(confirm production merchant-adapter URL with platform team)* |
+| Staging | *(confirm staging merchant-adapter URL with platform team)* |
+| QA5 | `https://pgp-qa5.paytm.in/merchant-adapter` |
 
-**Every module follows this request pattern:**
+**Every module follows this request pattern** (`Content-Type` comes from the base section):
 ```jsonc
 {
-    "url": "{{connection.baseUrl}}/make/{functionName}?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/{functionName}?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": { ...module-specific params... }
     }
 }
@@ -98,7 +98,7 @@ The connection stores three fields:
 | `keySecret` | Key Secret | password | Used for HMAC inbound auth to the proxy and by the proxy to sign the downstream Paytm checksum. Never logged or sent to Paytm directly. |
 | `baseUrl` | Environment | select | Proxy base URL — determines the Paytm environment downstream |
 
-Connection validation sends a lightweight signed request to `/make/fetchPaymentLinks`. HTTP 200 means the HMAC was accepted — credentials are valid at the proxy level.
+Connection validation sends a lightweight signed request to `/integration/fetchPaymentLinks`. HTTP 200 means the HMAC was accepted — credentials are valid at the proxy level.
 
 ---
 
@@ -107,9 +107,10 @@ Connection validation sends a lightweight signed request to `/make/fetchPaymentL
 ```
 make-nodes-paytm/
 ├── app/
+│   ├── base.jsonc                  # Common headers, error handling, log sanitization
 │   ├── connections/
 │   │   └── paytm.jsonc             # Connection (credential) definition
-│   ├── modules/
+│   ├── modules/                    # Communication tab — request/response per module
 │   │   ├── fetchOrderList.jsonc
 │   │   ├── orderDetail.jsonc
 │   │   ├── fetchPaymentLinks.jsonc
@@ -124,8 +125,9 @@ make-nodes-paytm/
 │   │   ├── pauseResumeSubscription.jsonc
 │   │   ├── cancelSubscription.jsonc
 │   │   └── makeApiCall.jsonc
-│   └── remote-procedures/          # Dynamic dropdown data loaders
-│       └── listCurrencies.jsonc
+│   ├── interfaces/                 # Interface tab — output field definitions per module
+│   │   └── <same 14 filenames as modules/>
+│   └── remote-procedures/          # Reserved for future dynamic dropdown data loaders
 ├── docs/
 │   ├── api-mapping.md              # Full parameter mapping for all modules
 │   └── checksum-algorithm.md       # Paytm checksum deep-dive + proxy rationale
@@ -152,18 +154,17 @@ make-nodes-paytm/
 
 ### Adding a new module
 
-1. Create `app/modules/<moduleName>.jsonc` using the standard proxy pattern:
+1. Create `app/modules/<moduleName>.jsonc` using the standard proxy pattern (`Content-Type` is inherited from the base section):
    ```jsonc
    {
-       "url": "{{connection.baseUrl}}/make/<functionName>?mid={{connection.merchantId}}",
+       "url": "{{connection.baseUrl}}/integration/<functionName>?mid={{connection.merchantId}}",
        "method": "POST",
        "headers": {
-           "Content-Type": "application/json",
-           "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+           "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
        },
        "body": {
-           "requestId": "{{uuid()}}",
-           "timestamp": "{{toTimestamp(now)}}",
+           "requestId": "{{formatDate(now; 'x')}}",
+           "timestamp": "{{formatDate(now; 'x')}}",
            "params": {
                // module-specific params
            }

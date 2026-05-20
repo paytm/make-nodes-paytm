@@ -1,0 +1,24 @@
+/**
+ * INTERFACE: settlementBillList
+ * OUTPUT: one item from body.data.body.settleBillList (the iterate path)
+ *
+ * Paste this into: Apps Editor → settlementBillList → Interface tab
+ * Strip JSONC comments first.
+ *
+ * NOTE: Field names must be verified against a real Paytm RTDD settlement response.
+ *       The actual key names may differ — verify body.data.body.settleBillList
+ *       against a live response before submitting for review.
+ */
+[
+    { "name": "settlementBillId",  "label": "Settlement bill ID",  "type": "text"   },
+    { "name": "utrNo",             "label": "UTR number",          "type": "text"   },
+    { "name": "settleStatus",      "label": "Settlement status",   "type": "text"   },
+    { "name": "settleAmount",      "label": "Settlement amount",   "type": "text"   },
+    { "name": "settlementDate",    "label": "Settlement date",     "type": "date"   },
+    { "name": "bankName",          "label": "Bank name",           "type": "text"   },
+    { "name": "bankAccountNo",     "label": "Bank account number", "type": "text"   },
+    { "name": "totalTxnCount",     "label": "Total transactions",  "type": "number" },
+    { "name": "totalTxnAmount",    "label": "Total txn amount",    "type": "text"   },
+    { "name": "totalRefundCount",  "label": "Total refunds",       "type": "number" },
+    { "name": "totalRefundAmount", "label": "Total refund amount", "type": "text"   }
+]

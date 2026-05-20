@@ -13,12 +13,13 @@
  *                   2. The proxy uses it to sign the Paytm AES checksum downstream.
  *                 Marked password:true — Make never displays it after save.
  *   baseUrl     – Proxy base URL. Determines the Paytm environment downstream.
- *                 Production : https://paytm-make-proxy.paytmpayments.com
- *                 Staging    : https://paytm-make-proxy-staging.paytmpayments.com
+ *                 Production : https://securegw.paytm.in
+ *                 Staging    : https://securegw-stage.paytm.in
+ *                 QA         : https://pgp-qa5.paytm.in/merchant-adapter
  *
  * HOW AUTHENTICATION WORKS
  *   Every module request includes:
- *     X-Signature: HMAC-SHA256(json(body), keySecret)
+ *     X-Signature: HMAC-SHA256(createJSON(body), keySecret)
  *   The proxy verifies this before forwarding to Paytm.
  *   keySecret never travels to Paytm — only the HMAC of the body does.
  *
@@ -31,27 +32,34 @@
  *   - name: keySecret   | label: Key Secret    | type: password | required: true
  *   - name: baseUrl     | label: Environment   | type: select   | required: true
  *       options:
- *         - label: Production  | value: https://paytm-make-proxy.paytmpayments.com
- *         - label: Staging     | value: https://paytm-make-proxy-staging.paytmpayments.com
+ *         - label: Production  | value: https://securegw.paytm.in
+ *         - label: Staging     | value: https://securegw-stage.paytm.in
+ *         - label: QA          | value: https://pgp-qa5.paytm.in/merchant-adapter
  */
 {
     // Validation call — send a minimal signed request to the proxy.
     // Any HTTP 200 (even a downstream FAILED from Paytm) means the HMAC was
     // accepted and the credentials are valid at the proxy level.
-    "url": "{{parameters.baseUrl}}/make/fetchPaymentLinks?mid={{parameters.merchantId}}",
+    "url": "{{parameters.baseUrl}}/integration/fetchPaymentLinks?mid={{parameters.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); parameters.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {}
     },
     "response": {
         // HTTP 200 from proxy = HMAC accepted = credentials valid.
         // HTTP 401 = wrong keySecret. HTTP 404 = proxy not enabled.
-        "valid": "{{statusCode == 200}}"
+        "valid": "{{statusCode == 200}}",
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": ["request.headers.X-Signature"]
     }
 }

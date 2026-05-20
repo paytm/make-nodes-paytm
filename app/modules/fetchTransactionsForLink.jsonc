@@ -11,20 +11,20 @@
  *   Verify body.data.txnDetailsList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchTransactionsForLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchTransactionsForLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "linkId": "{{parameters.linkId}}",
             "searchStartDate": "{{formatDate(parameters.searchStartDate; 'YYYY-MM-DD')}}",
             "searchEndDate": "{{formatDate(parameters.searchEndDate; 'YYYY-MM-DD')}}",
-            "fetchAllTxns": "{{parameters.fetchAllTxns}}"
+            "fetchAllTxns": "{{parameters.fetchAllTxns}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}"
         }
     },
     "response": {

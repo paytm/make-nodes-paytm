@@ -1,0 +1,24 @@
+/**
+ * BASE COMMUNICATION — inherited by every module in this app.
+ *
+ * Defines:
+ *   headers      — Content-Type applied to every outbound request (modules do NOT repeat this).
+ *   response.error — Default error message shown in Make when a request fails.
+ *   log.sanitize — Prevents X-Signature from appearing in Make's request logs.
+ *
+ * HOW TO USE IN MAKE
+ *   Apps Editor → [App] → Base → Communications → paste the JSON below (strip JSONC comments first).
+ */
+{
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": {
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": ["request.headers.X-Signature"]
+    }
+}

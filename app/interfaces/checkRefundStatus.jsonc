@@ -1,0 +1,46 @@
+/**
+ * INTERFACE: checkRefundStatus
+ * OUTPUT: body.data — the full Paytm /v2/refund/status response
+ *
+ * Paste this into: Apps Editor → checkRefundStatus → Interface tab
+ * Strip JSONC comments first.
+ *
+ * NOTE: Verify field names against a real Paytm /v2/refund/status response.
+ */
+[
+    {
+        "name": "head",
+        "label": "Response head",
+        "type": "collection",
+        "spec": [
+            { "name": "responseTimestamp", "label": "Response timestamp", "type": "text" },
+            { "name": "signature",         "label": "Signature",          "type": "text" }
+        ]
+    },
+    {
+        "name": "body",
+        "label": "Response body",
+        "type": "collection",
+        "spec": [
+            {
+                "name": "resultInfo",
+                "label": "Result info",
+                "type": "collection",
+                "spec": [
+                    { "name": "resultStatus", "label": "Result status", "type": "text" },
+                    { "name": "resultCode",   "label": "Result code",   "type": "text" },
+                    { "name": "resultMsg",    "label": "Result message", "type": "text" }
+                ]
+            },
+            { "name": "orderId",       "label": "Order ID",            "type": "text" },
+            { "name": "mid",           "label": "Merchant ID",         "type": "text" },
+            { "name": "refId",         "label": "Refund reference ID", "type": "text" },
+            { "name": "refundId",      "label": "Paytm refund ID",     "type": "text" },
+            { "name": "txnId",         "label": "Transaction ID",      "type": "text" },
+            { "name": "txnTimestamp",  "label": "Transaction date",    "type": "date" },
+            { "name": "refundAmount",  "label": "Refund amount",       "type": "text" },
+            { "name": "refundType",    "label": "Refund type",         "type": "text" },
+            { "name": "status",        "label": "Refund status",       "type": "text" }
+        ]
+    }
+]
