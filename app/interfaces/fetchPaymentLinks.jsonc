@@ -1,0 +1,30 @@
+/**
+ * INTERFACE: fetchPaymentLinks
+ * OUTPUT: one item from body.data.linkDetailsList (the iterate path)
+ *
+ * Paste this into: Apps Editor → fetchPaymentLinks → Interface tab
+ * Strip JSONC comments first (scripts/validate-jsonc.sh).
+ *
+ * NOTE: Field names must be verified against a real Paytm /link/fetch response.
+ *       Any fields that do not appear in the actual response should be removed.
+ */
+[
+    { "name": "linkId",            "label": "Link ID",             "type": "text"    },
+    { "name": "linkName",          "label": "Link name",           "type": "text"    },
+    { "name": "linkDescription",   "label": "Description",         "type": "text"    },
+    { "name": "linkType",          "label": "Link type",           "type": "text"    },
+    { "name": "amount",            "label": "Amount",              "type": "text"    },
+    { "name": "linkUrl",           "label": "Payment URL",         "type": "url"     },
+    { "name": "linkStatus",        "label": "Link status",         "type": "text"    },
+    { "name": "paymentStatus",     "label": "Payment status",      "type": "text"    },
+    { "name": "isActive",          "label": "Is active",           "type": "boolean" },
+    { "name": "createdOn",         "label": "Created on",          "type": "date"    },
+    { "name": "expiryDate",        "label": "Expiry date",         "type": "date"    },
+    { "name": "totalCount",        "label": "Total payments",      "type": "number"  },
+    { "name": "merchantRequestId", "label": "Merchant request ID", "type": "text"    },
+    { "name": "customerId",        "label": "Customer ID",         "type": "text"    },
+    { "name": "custName",          "label": "Customer name",       "type": "text"    },
+    { "name": "custEmail",         "label": "Customer email",      "type": "email"   },
+    { "name": "custMobile",        "label": "Customer mobile",     "type": "phone"   },
+    { "name": "linkNotes",         "label": "Notes",               "type": "text"    }
+]

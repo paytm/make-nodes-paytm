@@ -13,15 +13,14 @@
  *   Verify body.data.linkDetailsList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchPaymentLinks?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{hmac(json(body); connection.keySecret; 'sha256')}}"
+        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{uuid()}}",
-        "timestamp": "{{toTimestamp(now)}}",
+        "requestId": "{{formatDate(now; 'x')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {
             "fromDate": "{{formatDate(parameters.fromDate; 'YYYY-MM-DD')}}",
             "toDate": "{{formatDate(parameters.toDate; 'YYYY-MM-DD')}}",
@@ -29,7 +28,8 @@
             "merchantRequestId": "{{parameters.merchantRequestId}}",
             "linkType": "{{parameters.linkType}}",
             "paymentStatus": "{{parameters.paymentStatus}}",
-            "isActive": "{{parameters.isActive}}"
+            "isActive": "{{parameters.isActive}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}"
         }
     },
     "response": {
