@@ -12,11 +12,11 @@
     "url": "{{connection.baseUrl}}/integration/fetchRefundList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(body.requestId; connection.keySecret)}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",

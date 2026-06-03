@@ -19,7 +19,9 @@
  *
  * HOW AUTHENTICATION WORKS
  *   Every module request includes:
- *     X-Signature: HMAC-SHA256(createJSON(body), keySecret)
+ *     X-Signature: HMAC-SHA256(requestId, keySecret)
+ *   Signing requestId (a flat string) avoids Make's JSON key-ordering inconsistency
+ *   between createJSON(body) (definition order) and the HTTP body (alphabetical order).
  *   The proxy verifies this before forwarding to Paytm.
  *   keySecret never travels to Paytm — only the HMAC of the body does.
  *
@@ -44,11 +46,11 @@
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
+        "X-Signature": "{{sha256(join(array(formatDate(now; 'X'); '000'); ''); parameters.keySecret)}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {}
     },
     "response": {
