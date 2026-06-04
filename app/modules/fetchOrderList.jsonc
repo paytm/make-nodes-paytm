@@ -26,8 +26,9 @@
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
+            "mid": "{{connection.merchantId}}",
+            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
+            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
             "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
             "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
             "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
