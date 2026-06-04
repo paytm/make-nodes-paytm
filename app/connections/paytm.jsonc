@@ -46,11 +46,11 @@
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{sha256(join(array(formatDate(now; 'X'); '000'); ''); parameters.keySecret)}}"
+        "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'X')}}000",
-        "timestamp": "{{formatDate(now; 'X')}}000",
+        "requestId": "{{formatDate(now; 'X')}}",
+        "timestamp": "{{formatDate(now; 'x')}}",
         "params": {}
     },
     "response": {
