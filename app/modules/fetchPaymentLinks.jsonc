@@ -16,7 +16,7 @@
     "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "X-Signature": "{{sha256(body.requestId; 'hex'; connection.keySecret; 'utf8')}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
         "requestId": "{{formatDate(now; 'X')}}000",

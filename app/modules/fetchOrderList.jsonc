@@ -8,7 +8,7 @@
  * No checksum logic in IML.
  *
  * AUTH PATTERN (same for all modules)
- *   X-Signature = HMAC-SHA256(requestId, connection.keySecret)
+ *   X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
  *   The proxy verifies this, then signs the downstream Paytm request.
  *
  * RESPONSE STRUCTURE
@@ -20,7 +20,7 @@
     "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "X-Signature": "{{sha256(body.requestId; 'hex'; connection.keySecret; 'utf8')}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
         "requestId": "{{formatDate(now; 'X')}}000",
