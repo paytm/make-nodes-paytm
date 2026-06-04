@@ -46,7 +46,7 @@
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{sha256(parameters.merchantId; parameters.keySecret)}}"
+        "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
     },
     "body": {
         "requestId": "{{formatDate(now; 'X')}}",
