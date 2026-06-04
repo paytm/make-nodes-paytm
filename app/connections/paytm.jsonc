@@ -50,7 +50,7 @@
     // Validation call — send a minimal signed request to the proxy.
     // Any HTTP 200 (even a downstream FAILED from Paytm) means the HMAC was
     // accepted and the credentials are valid at the proxy level.
-    "url": "{{parameters.baseUrl}}/integration/fetchPaymentLinks?mid={{parameters.merchantId}}",
+    "url": "{{parameters.baseUrl}}/integration/fetchOrderList?mid={{parameters.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
