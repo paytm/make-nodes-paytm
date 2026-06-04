@@ -37,9 +37,8 @@
         }
     },
     "response": {
-        // Iterate over the order list returned by Paytm.
-        // Verify body.data.body.txn is the correct path during E2E testing.
-        "iterate": "{{body.data.body.txn}}",
-        "output": "{{item}}"
+        // Returns full response as one bundle: { resultInfo, orderList[], totalCount }
+        // Use a separate Iterator module in Make to loop over orderList if needed.
+        "output": "{{body.data}}"
     }
 }
