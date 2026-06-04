@@ -1,47 +1,112 @@
 # Make UI — modules: communication and parameters
 
-Use when wiring modules in **Apps Editor**: define **mappable parameters** first, then **Communication**. Each module includes a **reference table**, **paste-ready parameter `json`**, **Communication `jsonc`** aligned with [`app/modules/*.jsonc`](../app/modules/), and **Communication `json`** with `//` lines removed.
+Use when wiring modules in **Apps Editor**: define **mappable parameters** first, then **Communication**. Each section mirrors the repo JSONC sources under `app/`.
 
 **Canonical long-form tables:** [`api-mapping.md`](./api-mapping.md) § *Parameter Mapping*.
 
 **Typical paste order**
 
-1. Parameter definitions — **`json`** array (`name`, `label`, `type`, `required`, `options`, `default` where needed).
-2. Communication — **`json`** block below. Use **`jsonc`** when your editor accepts it (exact repo copy).
+1. **Base** — [`app/base.jsonc`](../app/base.jsonc) (Content-Type, default error, log sanitize).
+2. **Connection** — parameters JSON + Communication from [`app/connections/paytm.jsonc`](../app/connections/paytm.jsonc).
+3. **Per module** — mappable parameters + Communication JSON below.
 
-**IML**
+**IML (current repo)**
 
-- **`X-Signature` (modules):** `{{sha256(createJSON(body); connection.keySecret)}}`
-- **`timestamp`:** `{{formatDate(now; 'x')}}`
-- **`requestId`:** `{{formatDate(now; 'x')}}` — use the same epoch-ms pattern as `timestamp`; `uuid()` is not available in this Make IML runtime.
+| Context | `X-Signature` |
+|--------|----------------|
+| **Connection save** | `{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}` |
+| **All modules** | `{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}` |
 
-**Naming:** modules use **`connection.*`**; connection **save validation** uses **`parameters.*`** (see [make-connection-paytm.md](./make-connection-paytm.md)).
+- Use **4-argument** `sha256(message; 'hex'; keySecret; 'utf8')`. Two-arg `sha256(message; key)` is **not** HMAC in Make IML.
+- **URL:** `{{connection.baseUrl}}/integration/{functionName}?mid={{connection.merchantId}}`
+- **Modules:** `requestId` and `timestamp` = `{{formatDate(now; 'X')}}000`
+- **Connection validation body:** `requestId` = `{{formatDate(now; 'X')}}`, `timestamp` = `{{formatDate(now; 'x')}}`, empty `params`
+- **Content-Type** only in **Base** — modules omit it
+- **Naming:** modules → `connection.*`; connection save → `parameters.*`
+
+**Public Make hosts:** use routable merchant-adapter URLs (e.g. `https://secure.paytmpayments.com/merchant-adapter`). Avoid `secure-int` (private IP). Add `&env=production` or `&env=staging` on module URLs when required.
 
 ---
 
 ## Table of contents
 
-1. [Connection](#connection-parameters-not-modules) — `merchantId`, `keySecret`, `baseUrl`
-2. [`createPaymentLink`](#1-createpaymentlink-action)
-3. [`fetchPaymentLinks`](#2-fetchpaymentlinks-search)
-4. [`fetchTransactionsForLink`](#3-fetchtransactionsforlink-search)
-5. [`fetchOrderList`](#4-fetchorderlist-search)
-6. [`orderDetail`](#5-orderdetail-action-rtdd--settlement-via-proxy)
-7. [`initiateRefund`](#6-initiaterefund-action)
-8. [`checkRefundStatus`](#7-checkrefundstatus-action)
-9. [`fetchRefundList`](#8-fetchrefundlist-search)
-10. [`settlementBillList`](#9-settlementbilllist-search-rtdd)
-11. [`settlementTxnListByDate`](#10-settlementtxnlistbydate-search-rtdd)
-12. [`fetchSubscriptionStatus`](#11-fetchsubscriptionstatus-action)
-13. [`pauseResumeSubscription`](#12-pauseresumesubscription-action)
-14. [`cancelSubscription`](#13-cancelsubscription-action)
-15. [`makeApiCall`](#14-makeapicall-universal)
+0. [Base communication](#base-communication)
+1. [Connection](#connection-parameters-not-modules)
+2. [`createPaymentLink`](#2-createpaymentlink) — Action
+3. [`fetchPaymentLinks`](#3-fetchpaymentlinks) — Search
+4. [`fetchTransactionsForLink`](#4-fetchtransactionsforlink) — Search
+5. [`fetchOrderList`](#5-fetchorderlist) — Search
+6. [`orderDetail`](#6-orderdetail) — Action (RTDD / settlement via proxy)
+7. [`initiateRefund`](#7-initiaterefund) — Action
+8. [`checkRefundStatus`](#8-checkrefundstatus) — Action
+9. [`fetchRefundList`](#9-fetchrefundlist) — Search
+10. [`settlementBillList`](#10-settlementbilllist) — Search (RTDD)
+11. [`settlementTxnListByDate`](#11-settlementtxnlistbydate) — Search (RTDD)
+12. [`fetchSubscriptionStatus`](#12-fetchsubscriptionstatus) — Action
+13. [`pauseResumeSubscription`](#13-pauseresumesubscription) — Action
+14. [`cancelSubscription`](#14-cancelsubscription) — Action
+15. [`makeApiCall`](#15-makeapicall) — Universal
+
+---
+
+## Base communication
+
+**Source:** [`app/base.jsonc`](../app/base.jsonc)
+
+### Base — Communication reference (`jsonc`)
+
+```jsonc
+/**
+ * BASE COMMUNICATION — inherited by every module in this app.
+ *
+ * Defines:
+ *   headers      — Content-Type applied to every outbound request (modules do NOT repeat this).
+ *   response.error — Default error message shown in Make when a request fails.
+ *   log.sanitize — Prevents X-Signature from appearing in Make's request logs.
+ *
+ * HOW TO USE IN MAKE
+ *   Apps Editor → [App] → Base → Communications → paste the JSON below (strip JSONC comments first).
+ */
+{
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": {
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": ["request.headers.X-Signature"]
+    }
+}
+```
+
+### Base — Communication (`JSON`, paste)
+
+```json
+{
+    "headers": {
+        "Content-Type": "application/json"
+    },
+    "response": {
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": [
+            "request.headers.X-Signature"
+        ]
+    }
+}
+```
 
 ---
 
 ## Connection parameters (not modules)
 
-Stored on the **Connection**, not modules. Repo file: [`app/connections/paytm.jsonc`](../app/connections/paytm.jsonc).
+**Source:** [`app/connections/paytm.jsonc`](../app/connections/paytm.jsonc)
 
 | Parameter `name` | Make `type` | Required |
 |---|---|---|
@@ -53,38 +118,23 @@ Stored on the **Connection**, not modules. Repo file: [`app/connections/paytm.js
 
 ```json
 [
-  {
-    "name": "merchantId",
-    "label": "Merchant ID (MID)",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "keySecret",
-    "label": "Key Secret",
-    "type": "password",
-    "required": true
-  },
+  { "name": "merchantId", "label": "Merchant ID (MID)", "type": "text", "required": true },
+  { "name": "keySecret", "label": "Key Secret", "type": "password", "required": true },
   {
     "name": "baseUrl",
     "label": "Environment",
     "type": "select",
     "required": true,
     "options": [
-      {
-        "label": "Production",
-        "value": "https://paytm-make-proxy.paytmpayments.com"
-      },
-      {
-        "label": "Staging",
-        "value": "https://paytm-make-proxy-staging.paytmpayments.com"
-      }
+      { "label": "Production", "value": "https://securegw.paytm.in" },
+      { "label": "Staging", "value": "https://securegw-stage.paytm.in" },
+      { "label": "QA", "value": "https://pgp-qa5.paytm.in/merchant-adapter" }
     ]
   }
 ]
 ```
 
-### Connection — Communication reference (`paytm.jsonc`)
+### Connection — Communication reference (`jsonc`)
 
 ```jsonc
 /**
@@ -102,14 +152,25 @@ Stored on the **Connection**, not modules. Repo file: [`app/connections/paytm.js
  *                   2. The proxy uses it to sign the Paytm AES checksum downstream.
  *                 Marked password:true — Make never displays it after save.
  *   baseUrl     – Proxy base URL. Determines the Paytm environment downstream.
- *                 Production : https://paytm-make-proxy.paytmpayments.com
- *                 Staging    : https://paytm-make-proxy-staging.paytmpayments.com
+ *                 Production : https://securegw.paytm.in
+ *                 Staging    : https://securegw-stage.paytm.in
+ *                 QA         : https://pgp-qa5.paytm.in/merchant-adapter
  *
  * HOW AUTHENTICATION WORKS
- *   Every module request includes:
- *     X-Signature: HMAC-SHA256(createJSON(body), keySecret)
- *   The proxy verifies this before forwarding to Paytm.
- *   keySecret never travels to Paytm — only the HMAC of the body does.
+ *   Make IML requires the 4-argument form of sha256 for proper HMAC-SHA256:
+ *     sha256(message; 'hex'; key; 'utf8')
+ *   The 2-argument form sha256(message; key) treats the second arg as the output
+ *   encoding (not the HMAC key), producing plain SHA256 — NOT HMAC.
+ *
+ *   Connection validation signs merchantId (static, no timing issues since
+ *   body cannot be accessed from connection headers in Make IML):
+ *     X-Signature = HMAC-SHA256(merchantId, keySecret) — hex output
+ *
+ *   Every module request signs connection.merchantId (same message as connection save):
+ *     X-Signature = HMAC-SHA256(merchantId, keySecret) — hex output
+ *
+ *   The proxy accepts either form and verifies before forwarding to Paytm.
+ *   keySecret never travels to Paytm — only the HMAC header does.
  *
  * HOW TO COPY INTO MAKE
  *   Apps Editor → Connections → [your connection] → Communication tab → paste below.
@@ -120,51 +181,64 @@ Stored on the **Connection**, not modules. Repo file: [`app/connections/paytm.js
  *   - name: keySecret   | label: Key Secret    | type: password | required: true
  *   - name: baseUrl     | label: Environment   | type: select   | required: true
  *       options:
- *         - label: Production  | value: https://paytm-make-proxy.paytmpayments.com
- *         - label: Staging     | value: https://paytm-make-proxy-staging.paytmpayments.com
+ *         - label: Production  | value: https://securegw.paytm.in
+ *         - label: Staging     | value: https://securegw-stage.paytm.in
+ *         - label: QA          | value: https://pgp-qa5.paytm.in/merchant-adapter
  */
 {
     // Validation call — send a minimal signed request to the proxy.
     // Any HTTP 200 (even a downstream FAILED from Paytm) means the HMAC was
     // accepted and the credentials are valid at the proxy level.
-    "url": "{{parameters.baseUrl}}/make/fetchPaymentLinks?mid={{parameters.merchantId}}",
+    "url": "{{parameters.baseUrl}}/integration/fetchOrderList?mid={{parameters.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
+        "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}",
         "timestamp": "{{formatDate(now; 'x')}}",
         "params": {}
     },
     "response": {
         // HTTP 200 from proxy = HMAC accepted = credentials valid.
         // HTTP 401 = wrong keySecret. HTTP 404 = proxy not enabled.
-        "valid": "{{statusCode == 200}}"
+        "valid": "{{statusCode == 200}}",
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": ["request.headers.X-Signature"]
     }
 }
 ```
 
-### Connection — Communication (`JSON`, paste into Make)
-
-If the Apps Editor rejects `//`, use this cleaned copy from the same file.
+### Connection — Communication (`JSON`, paste)
 
 ```json
 {
-    "url": "{{parameters.baseUrl}}/make/fetchPaymentLinks?mid={{parameters.merchantId}}",
+    "url": "{{parameters.baseUrl}}/integration/fetchOrderList?mid={{parameters.merchantId}}",
     "method": "POST",
     "headers": {
         "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); parameters.keySecret)}}"
+        "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}",
         "timestamp": "{{formatDate(now; 'x')}}",
         "params": {}
     },
     "response": {
-        "valid": "{{statusCode == 200}}"
+        "valid": "{{statusCode == 200}}",
+        "error": {
+            "message": "[{{statusCode}}] {{body.error}}"
+        }
+    },
+    "log": {
+        "sanitize": [
+            "request.headers.X-Signature"
+        ]
     }
 }
 ```
@@ -172,104 +246,34 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 1. `createPaymentLink` (Action)
-
 **Source:** [`app/modules/createPaymentLink.jsonc`](../app/modules/createPaymentLink.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `amount` | Used in `params` — add matching Make form field |
+| `bindLinkIdMobile` | Used in `params` — add matching Make form field |
+| `customerEmail` | Used in `params` — add matching Make form field |
+| `customerId` | Used in `params` — add matching Make form field |
+| `customerMobile` | Used in `params` — add matching Make form field |
+| `customerName` | Used in `params` — add matching Make form field |
+| `expiryDate` | Used in `params` — add matching Make form field |
+| `linkDescription` | Used in `params` — add matching Make form field |
+| `linkName` | Used in `params` — add matching Make form field |
+| `linkNotes` | Used in `params` — add matching Make form field |
+| `linkType` | Used in `params` — add matching Make form field |
+| `maxPaymentsAllowed` | Used in `params` — add matching Make form field |
+| `merchantRequestId` | Used in `params` — add matching Make form field |
+| `partialPayment` | Used in `params` — add matching Make form field |
+| `sendEmail` | Used in `params` — add matching Make form field |
+| `sendSms` | Used in `params` — add matching Make form field |
+| `statusCallbackUrl` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `linkName` | `text` | Yes | — | — |
-| `linkDescription` | `text` | Yes | — | — |
-| `linkType` | `select` | Yes | — | `FIXED` / `GENERIC` |
-| `amount` | `number` | No¹ | — | ¹ Required when `linkType` = `FIXED` |
-| `customerName` | `text` | No | — | — |
-| `customerEmail` | `text` | No | — | — |
-| `customerMobile` | `text` | No | — | — |
-| `expiryDate` | `date` | No | — | Serialized as `YYYY-MM-DD HH:mm:ss` |
-| `sendSms` | `boolean` | No | — | — |
-| `sendEmail` | `boolean` | No | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "linkName",
-    "label": "Link name",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "linkDescription",
-    "label": "Link description",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "linkType",
-    "label": "Link type",
-    "type": "select",
-    "required": true,
-    "options": [
-      {
-        "label": "Fixed amount",
-        "value": "FIXED"
-      },
-      {
-        "label": "Generic (any amount)",
-        "value": "GENERIC"
-      }
-    ]
-  },
-  {
-    "name": "amount",
-    "label": "Amount",
-    "type": "number",
-    "required": false
-  },
-  {
-    "name": "customerName",
-    "label": "Customer name",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "customerEmail",
-    "label": "Customer email",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "customerMobile",
-    "label": "Customer mobile",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "expiryDate",
-    "label": "Expiry date",
-    "type": "date",
-    "required": false
-  },
-  {
-    "name": "sendSms",
-    "label": "Send SMS",
-    "type": "boolean",
-    "required": false
-  },
-  {
-    "name": "sendEmail",
-    "label": "Send email",
-    "type": "boolean",
-    "required": false
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `createPaymentLink.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -279,33 +283,43 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  * PROXY FUNCTION: createPaymentLink
  *
  * amount is required when linkType = FIXED; optional for GENERIC.
- * expiryDate format: YYYY-MM-DD HH:mm:ss
+ * expiryDate format expected by Paytm: DD/MM/YYYY
+ * customerContact is a nested object — customerName/Email/Mobile go inside it.
  *
  * RESPONSE STRUCTURE
  *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
+ *   data.body.linkId contains the created link ID on success.
  */
 {
-    "url": "{{connection.baseUrl}}/make/createPaymentLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/createPaymentLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
+            "mid": "{{connection.merchantId}}",
             "linkName": "{{parameters.linkName}}",
             "linkDescription": "{{parameters.linkDescription}}",
             "linkType": "{{parameters.linkType}}",
             "amount": "{{parameters.amount}}",
-            "customerName": "{{parameters.customerName}}",
-            "customerEmail": "{{parameters.customerEmail}}",
-            "customerMobile": "{{parameters.customerMobile}}",
-            "expiryDate": "{{formatDate(parameters.expiryDate; 'YYYY-MM-DD HH:mm:ss')}}",
+            "partialPayment": "{{parameters.partialPayment}}",
+            "bindLinkIdMobile": "{{parameters.bindLinkIdMobile}}",
+            "maxPaymentsAllowed": "{{parameters.maxPaymentsAllowed}}",
+            "customerContact": {
+                "customerName": "{{parameters.customerName}}",
+                "customerEmail": "{{parameters.customerEmail}}",
+                "customerMobile": "{{parameters.customerMobile}}"
+            },
             "sendSms": "{{parameters.sendSms}}",
-            "sendEmail": "{{parameters.sendEmail}}"
+            "sendEmail": "{{parameters.sendEmail}}",
+            "expiryDate": "{{formatDate(parameters.expiryDate; 'DD/MM/YYYY')}}",
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "customerId": "{{parameters.customerId}}",
+            "linkNotes": "{{parameters.linkNotes}}",
+            "statusCallbackUrl": "{{parameters.statusCallbackUrl}}"
         }
     },
     "response": {
@@ -314,33 +328,39 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/createPaymentLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/createPaymentLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
+            "mid": "{{connection.merchantId}}",
             "linkName": "{{parameters.linkName}}",
             "linkDescription": "{{parameters.linkDescription}}",
             "linkType": "{{parameters.linkType}}",
             "amount": "{{parameters.amount}}",
-            "customerName": "{{parameters.customerName}}",
-            "customerEmail": "{{parameters.customerEmail}}",
-            "customerMobile": "{{parameters.customerMobile}}",
-            "expiryDate": "{{formatDate(parameters.expiryDate; 'YYYY-MM-DD HH:mm:ss')}}",
+            "partialPayment": "{{parameters.partialPayment}}",
+            "bindLinkIdMobile": "{{parameters.bindLinkIdMobile}}",
+            "maxPaymentsAllowed": "{{parameters.maxPaymentsAllowed}}",
+            "customerContact": {
+                "customerName": "{{parameters.customerName}}",
+                "customerEmail": "{{parameters.customerEmail}}",
+                "customerMobile": "{{parameters.customerMobile}}"
+            },
             "sendSms": "{{parameters.sendSms}}",
-            "sendEmail": "{{parameters.sendEmail}}"
+            "sendEmail": "{{parameters.sendEmail}}",
+            "expiryDate": "{{formatDate(parameters.expiryDate; 'DD/MM/YYYY')}}",
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "customerId": "{{parameters.customerId}}",
+            "linkNotes": "{{parameters.linkNotes}}",
+            "statusCallbackUrl": "{{parameters.statusCallbackUrl}}"
         }
     },
     "response": {
@@ -352,185 +372,99 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 2. `fetchPaymentLinks` (Search)
-
 **Source:** [`app/modules/fetchPaymentLinks.jsonc`](../app/modules/fetchPaymentLinks.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `customerEmail` | Used in `params` — add matching Make form field |
+| `customerName` | Used in `params` — add matching Make form field |
+| `customerPhone` | Used in `params` — add matching Make form field |
+| `filterFromDate` | Used in `params` — add matching Make form field |
+| `filterIsActive` | Used in `params` — add matching Make form field |
+| `filterToDate` | Used in `params` — add matching Make form field |
+| `linkId` | Used in `params` — add matching Make form field |
+| `merchantRequestId` | Used in `params` — add matching Make form field |
+| `paymentStatus` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `fromDate` | `date` | No | — | — |
-| `toDate` | `date` | No | — | — |
-| `linkId` | `text` | No | — | — |
-| `merchantRequestId` | `text` | No | — | — |
-| `linkType` | `select` | No | — | `FIXED` / `GENERIC` |
-| `paymentStatus` | `select` | No | — | `CREATED` / `PENDING` / `SUCCESS` / `FAILED` / `EXPIRED` |
-| `isActive` | `boolean` | No | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "fromDate",
-    "label": "From date",
-    "type": "date",
-    "required": false
-  },
-  {
-    "name": "toDate",
-    "label": "To date",
-    "type": "date",
-    "required": false
-  },
-  {
-    "name": "linkId",
-    "label": "Link ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "merchantRequestId",
-    "label": "Merchant request ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "linkType",
-    "label": "Link type",
-    "type": "select",
-    "required": false,
-    "options": [
-      {
-        "label": "Fixed",
-        "value": "FIXED"
-      },
-      {
-        "label": "Generic",
-        "value": "GENERIC"
-      }
-    ]
-  },
-  {
-    "name": "paymentStatus",
-    "label": "Payment status",
-    "type": "select",
-    "required": false,
-    "options": [
-      {
-        "label": "Created",
-        "value": "CREATED"
-      },
-      {
-        "label": "Pending",
-        "value": "PENDING"
-      },
-      {
-        "label": "Success",
-        "value": "SUCCESS"
-      },
-      {
-        "label": "Failed",
-        "value": "FAILED"
-      },
-      {
-        "label": "Expired",
-        "value": "EXPIRED"
-      }
-    ]
-  },
-  {
-    "name": "isActive",
-    "label": "Is active",
-    "type": "boolean",
-    "required": false
-  }
-]
-```
-
-### Response mapping (Search)
-
-| Field | Expression |
-| ----- | ----------- |
-| `iterate` | `{{body.data.linkDetailsList}}` |
-| `output` | `{{item}}` |
-
-### Module Communication — reference (`jsonc`, matches `fetchPaymentLinks.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
  * MODULE: fetchPaymentLinks
- * TYPE: Search (returns a list of payment links)
- * PAYTM ENDPOINT: POST /link/fetch (via proxy)
+ * TYPE: Search (returns payment links bundle)
  * PROXY FUNCTION: fetchPaymentLinks
+ * DOWNSTREAM: POST /link/fetch
  *
- * All parameters are optional — empty request returns all links.
- * linkType: FIXED / GENERIC
- * paymentStatus: CREATED / PENDING / SUCCESS / FAILED / EXPIRED
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data.linkDetailsList iterate path during E2E testing.
+ * KEY NOTES (Zapier parity):
+ *   - All params are optional; mid is always sent
+ *   - Dates go inside searchFilterRequestBody as DD/MM/YYYY
+ *   - paymentStatus choices: EXPIRED / INIT / PAID / PENDING
+ *   - X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchPaymentLinks?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "fromDate": "{{formatDate(parameters.fromDate; 'YYYY-MM-DD')}}",
-            "toDate": "{{formatDate(parameters.toDate; 'YYYY-MM-DD')}}",
-            "linkId": "{{parameters.linkId}}",
-            "merchantRequestId": "{{parameters.merchantRequestId}}",
-            "linkType": "{{parameters.linkType}}",
+            "mid": "{{connection.merchantId}}",
             "paymentStatus": "{{parameters.paymentStatus}}",
-            "isActive": "{{parameters.isActive}}"
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "linkId": "{{parameters.linkId}}",
+            "customerName": "{{parameters.customerName}}",
+            "customerEmail": "{{parameters.customerEmail}}",
+            "customerPhone": "{{parameters.customerPhone}}",
+            "searchFilterRequestBody": {
+                "fromDate": "{{formatDate(parameters.filterFromDate; 'DD/MM/YYYY')}}",
+                "toDate": "{{formatDate(parameters.filterToDate; 'DD/MM/YYYY')}}",
+                "isActive": "{{parameters.filterIsActive}}"
+            }
         }
     },
     "response": {
-        // Verify body.data.linkDetailsList is the correct iterate path during E2E testing.
-        "iterate": "{{body.data.linkDetailsList}}",
-        "output": "{{item}}"
+        "output": "{{body.data}}"
     }
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data.linkDetailsList iterate path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/fetchPaymentLinks?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "fromDate": "{{formatDate(parameters.fromDate; 'YYYY-MM-DD')}}",
-            "toDate": "{{formatDate(parameters.toDate; 'YYYY-MM-DD')}}",
-            "linkId": "{{parameters.linkId}}",
-            "merchantRequestId": "{{parameters.merchantRequestId}}",
-            "linkType": "{{parameters.linkType}}",
+            "mid": "{{connection.merchantId}}",
             "paymentStatus": "{{parameters.paymentStatus}}",
-            "isActive": "{{parameters.isActive}}"
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "linkId": "{{parameters.linkId}}",
+            "customerName": "{{parameters.customerName}}",
+            "customerEmail": "{{parameters.customerEmail}}",
+            "customerPhone": "{{parameters.customerPhone}}",
+            "searchFilterRequestBody": {
+                "fromDate": "{{formatDate(parameters.filterFromDate; 'DD/MM/YYYY')}}",
+                "toDate": "{{formatDate(parameters.filterToDate; 'DD/MM/YYYY')}}",
+                "isActive": "{{parameters.filterIsActive}}"
+            }
         }
     },
     "response": {
-        "iterate": "{{body.data.linkDetailsList}}",
-        "output": "{{item}}"
+        "output": "{{body.data}}"
     }
 }
 ```
@@ -538,59 +472,25 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 3. `fetchTransactionsForLink` (Search)
-
 **Source:** [`app/modules/fetchTransactionsForLink.jsonc`](../app/modules/fetchTransactionsForLink.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
-
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `linkId` | `text` | Yes | — | — |
-| `searchStartDate` | `date` | No | — | — |
-| `searchEndDate` | `date` | No | — | — |
-| `fetchAllTxns` | `boolean` | No | — | — |
-
-### Mappable parameters (`JSON`, paste)
-
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "linkId",
-    "label": "Link ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "searchStartDate",
-    "label": "Search start date",
-    "type": "date",
-    "required": false
-  },
-  {
-    "name": "searchEndDate",
-    "label": "Search end date",
-    "type": "date",
-    "required": false
-  },
-  {
-    "name": "fetchAllTxns",
-    "label": "Fetch all transactions",
-    "type": "boolean",
-    "required": false
-  }
-]
-```
+| Parameter `name` | Notes |
+|---|---|
+| `fetchAllTxns` | Used in `params` — add matching Make form field |
+| `limit` | Used in `params` — add matching Make form field |
+| `linkId` | Used in `params` — add matching Make form field |
+| `searchEndDate` | Used in `params` — add matching Make form field |
+| `searchStartDate` | Used in `params` — add matching Make form field |
 
 ### Response mapping (Search)
 
 | Field | Expression |
-| ----- | ----------- |
+|-------|------------|
 | `iterate` | `{{body.data.txnDetailsList}}` |
 | `output` | `{{item}}` |
 
-### Module Communication — reference (`jsonc`, matches `fetchTransactionsForLink.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -606,20 +506,20 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data.txnDetailsList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchTransactionsForLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchTransactionsForLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "linkId": "{{parameters.linkId}}",
             "searchStartDate": "{{formatDate(parameters.searchStartDate; 'YYYY-MM-DD')}}",
             "searchEndDate": "{{formatDate(parameters.searchEndDate; 'YYYY-MM-DD')}}",
-            "fetchAllTxns": "{{parameters.fetchAllTxns}}"
+            "fetchAllTxns": "{{parameters.fetchAllTxns}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}"
         }
     },
     "response": {
@@ -630,27 +530,24 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data.txnDetailsList iterate path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/fetchTransactionsForLink?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchTransactionsForLink?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "linkId": "{{parameters.linkId}}",
             "searchStartDate": "{{formatDate(parameters.searchStartDate; 'YYYY-MM-DD')}}",
             "searchEndDate": "{{formatDate(parameters.searchEndDate; 'YYYY-MM-DD')}}",
-            "fetchAllTxns": "{{parameters.fetchAllTxns}}"
+            "fetchAllTxns": "{{parameters.fetchAllTxns}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}"
         }
     },
     "response": {
@@ -663,256 +560,110 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 4. `fetchOrderList` (Search)
-
 **Source:** [`app/modules/fetchOrderList.jsonc`](../app/modules/fetchOrderList.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `endDate` | Used in `params` — add matching Make form field |
+| `limit` | Used in `params` — add matching Make form field |
+| `orderSearchStatus` | Used in `params` — add matching Make form field |
+| `orderSearchType` | Used in `params` — add matching Make form field |
+| `pageNumber` | Used in `params` — add matching Make form field |
+| `startDate` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `startDate` | `date` | Yes | — | — |
-| `endDate` | `date` | Yes | — | — |
-| `orderSearchStatus` | `select` | No | `ALL` | `ifempty` |
-| `orderSearchType` | `select` | No | `TRANSACTION` | `ifempty` |
-| `pageNumber` | `integer` | No | `1` | `ifempty` |
-| `pageSize` | `integer` | No | `20` | `ifempty` |
-| `merchantOrderId` | `text` | No | — | — |
-| `payMode` | `text` | No | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "startDate",
-    "label": "Start date",
-    "type": "date",
-    "required": true
-  },
-  {
-    "name": "endDate",
-    "label": "End date",
-    "type": "date",
-    "required": true
-  },
-  {
-    "name": "orderSearchStatus",
-    "label": "Order search status",
-    "type": "select",
-    "required": false,
-    "default": "ALL",
-    "options": [
-      {
-        "label": "All",
-        "value": "ALL"
-      },
-      {
-        "label": "Open",
-        "value": "OPEN"
-      },
-      {
-        "label": "Closed",
-        "value": "CLOSED"
-      },
-      {
-        "label": "Failed",
-        "value": "FAILED"
-      }
-    ]
-  },
-  {
-    "name": "orderSearchType",
-    "label": "Order search type",
-    "type": "select",
-    "required": false,
-    "default": "TRANSACTION",
-    "options": [
-      {
-        "label": "Transaction",
-        "value": "TRANSACTION"
-      },
-      {
-        "label": "Order",
-        "value": "ORDER"
-      }
-    ]
-  },
-  {
-    "name": "pageNumber",
-    "label": "Page number",
-    "type": "integer",
-    "required": false,
-    "default": 1
-  },
-  {
-    "name": "pageSize",
-    "label": "Page size",
-    "type": "integer",
-    "required": false,
-    "default": 20
-  },
-  {
-    "name": "merchantOrderId",
-    "label": "Merchant order ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "payMode",
-    "label": "Pay mode",
-    "type": "text",
-    "required": false
-  }
-]
-```
-
-### Response mapping (Search)
-
-| Field | Expression |
-| ----- | ----------- |
-| `iterate` | `{{body.data.body.txn}}` |
-| `output` | `{{item}}` |
-
-### Module Communication — reference (`jsonc`, matches `fetchOrderList.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
  * MODULE: fetchOrderList
- * TYPE: Search (returns a list of orders)
- * PAYTM ENDPOINT: POST /merchant-passbook/search/list/order/v2 (via proxy)
+ * TYPE: Search (returns order list bundle)
  * PROXY FUNCTION: fetchOrderList
+ * DOWNSTREAM: POST /merchant-passbook/search/list/order/v2
  *
- * Standard Checksum API — proxy builds the AES-signed {body, head} envelope.
- * No checksum logic in IML.
- *
- * AUTH PATTERN (same for all modules)
- *   X-Signature = HMAC-SHA256(createJSON(body), connection.keySecret)
- *   The proxy verifies this, then signs the downstream Paytm request.
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Iterate path for the order list: body.data.body.txn
- *   Verify this path against the actual Paytm response during E2E testing.
+ * KEY NOTES (from Zapier parity):
+ *   - orderSearchStatus "ALL" is INVALID at Paytm; map to "SUCCESS|FAILURE|PENDING"
+ *   - Dates must be IST datetime: "YYYY-MM-DDTHH:mm:ss+05:30"
+ *   - isSort must be boolean true
+ *   - X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchOrderList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
-            "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
-            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
+            "mid": "{{connection.merchantId}}",
+            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
+            "orderSearchStatus": "{{if(parameters.orderSearchStatus == 'ALL'; 'SUCCESS|FAILURE|PENDING'; ifempty(parameters.orderSearchStatus; 'SUCCESS'))}}",
+            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'ALL')}}",
             "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
-            "merchantOrderId": "{{parameters.merchantOrderId}}",
-            "payMode": "{{parameters.payMode}}"
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
+            "isSort": true
         }
     },
     "response": {
-        // Iterate over the order list returned by Paytm.
-        // Verify body.data.body.txn is the correct path during E2E testing.
-        "iterate": "{{body.data.body.txn}}",
-        "output": "{{item}}"
+        // Returns full response as one bundle: { resultInfo, orderList[], totalCount }
+        "output": "{{body.data}}"
     }
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{body, head} envelope.
- * No checksum logic in IML.
- *
- * AUTH PATTERN (same for all modules)
- *   X-Signature = HMAC-SHA256(createJSON(body), connection.keySecret)
- *   The proxy verifies this, then signs the downstream Paytm request.
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Iterate path for the order list: body.data.body.txn
- *   Verify this path against the actual Paytm response during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/fetchOrderList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
-            "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
-            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
+            "mid": "{{connection.merchantId}}",
+            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
+            "orderSearchStatus": "{{if(parameters.orderSearchStatus == 'ALL'; 'SUCCESS|FAILURE|PENDING'; ifempty(parameters.orderSearchStatus; 'SUCCESS'))}}",
+            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'ALL')}}",
             "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
-            "merchantOrderId": "{{parameters.merchantOrderId}}",
-            "payMode": "{{parameters.payMode}}"
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
+            "isSort": true
         }
     },
     "response": {
-        "iterate": "{{body.data.body.txn}}",
-        "output": "{{item}}"
+        "output": "{{body.data}}"
     }
 }
 ```
 
 ---
 
-## 5. `orderDetail` (Action, RTDD / settlement via proxy)
-
+## 5. `orderDetail` (Action (RTDD / settlement via proxy))
 **Source:** [`app/modules/orderDetail.jsonc`](../app/modules/orderDetail.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `bizOrderId` | Used in `params` — add matching Make form field |
+| `excludePaymentsData` | Used in `params` — add matching Make form field |
+| `isSettlementInfo` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `bizOrderId` | `text` | Yes | — | Transaction-level id |
-| `isSettlementInfo` | `boolean` | No | `false` | `ifempty` |
-| `excludePaymentsData` | `boolean` | No | `false` | `ifempty` |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "bizOrderId",
-    "label": "Business order ID (bizOrderId)",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "isSettlementInfo",
-    "label": "Include settlement info",
-    "type": "boolean",
-    "required": false,
-    "default": false
-  },
-  {
-    "name": "excludePaymentsData",
-    "label": "Exclude payments data",
-    "type": "boolean",
-    "required": false,
-    "default": false
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `orderDetail.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -929,15 +680,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path against actual Paytm response during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/orderDetail?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/orderDetail?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "bizOrderId": "{{parameters.bizOrderId}}",
             "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
@@ -951,22 +701,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path against actual Paytm response during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/orderDetail?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/orderDetail?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "bizOrderId": "{{parameters.bizOrderId}}",
             "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
@@ -982,59 +728,22 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 6. `initiateRefund` (Action)
-
 **Source:** [`app/modules/initiateRefund.jsonc`](../app/modules/initiateRefund.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `comments` | Used in `params` — add matching Make form field |
+| `orderId` | Used in `params` — add matching Make form field |
+| `refId` | Used in `params` — add matching Make form field |
+| `refundAmount` | Used in `params` — add matching Make form field |
+| `txnId` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `orderId` | `text` | Yes | — | — |
-| `txnId` | `text` | Yes | — | — |
-| `refId` | `text` | Yes | — | Idempotent refund key |
-| `refundAmount` | `number` | Yes | — | — |
-| `comments` | `text` | No | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "orderId",
-    "label": "Order ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "txnId",
-    "label": "Transaction ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "refId",
-    "label": "Refund reference ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "refundAmount",
-    "label": "Refund amount",
-    "type": "number",
-    "required": true
-  },
-  {
-    "name": "comments",
-    "label": "Comments",
-    "type": "text",
-    "required": false
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `initiateRefund.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1051,15 +760,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/initiateRefund?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/initiateRefund?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "orderId": "{{parameters.orderId}}",
             "txnId": "{{parameters.txnId}}",
@@ -1074,22 +782,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/initiateRefund?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/initiateRefund?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "orderId": "{{parameters.orderId}}",
             "txnId": "{{parameters.txnId}}",
@@ -1107,38 +811,19 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 7. `checkRefundStatus` (Action)
-
 **Source:** [`app/modules/checkRefundStatus.jsonc`](../app/modules/checkRefundStatus.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `orderId` | Used in `params` — add matching Make form field |
+| `refId` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `orderId` | `text` | Yes | — | — |
-| `refId` | `text` | Yes | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "orderId",
-    "label": "Order ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "refId",
-    "label": "Refund reference ID",
-    "type": "text",
-    "required": true
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `checkRefundStatus.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1152,15 +837,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/checkRefundStatus?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/checkRefundStatus?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "orderId": "{{parameters.orderId}}",
             "refId": "{{parameters.refId}}"
@@ -1172,22 +856,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/checkRefundStatus?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/checkRefundStatus?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "orderId": "{{parameters.orderId}}",
             "refId": "{{parameters.refId}}"
@@ -1202,69 +882,25 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 8. `fetchRefundList` (Search)
-
 **Source:** [`app/modules/fetchRefundList.jsonc`](../app/modules/fetchRefundList.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
-
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `startDate` | `date` | Yes | — | — |
-| `endDate` | `date` | Yes | — | — |
-| `pageNum` | `integer` | No | `1` | `ifempty` |
-| `pageSize` | `integer` | No | `20` | `ifempty` |
-| `isSort` | `boolean` | No | `true` | `ifempty` |
-
-### Mappable parameters (`JSON`, paste)
-
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "startDate",
-    "label": "Start date",
-    "type": "date",
-    "required": true
-  },
-  {
-    "name": "endDate",
-    "label": "End date",
-    "type": "date",
-    "required": true
-  },
-  {
-    "name": "pageNum",
-    "label": "Page number",
-    "type": "integer",
-    "required": false,
-    "default": 1
-  },
-  {
-    "name": "pageSize",
-    "label": "Page size",
-    "type": "integer",
-    "required": false,
-    "default": 20
-  },
-  {
-    "name": "isSort",
-    "label": "Sort results",
-    "type": "boolean",
-    "required": false,
-    "default": true
-  }
-]
-```
+| Parameter `name` | Notes |
+|---|---|
+| `endDate` | Used in `params` — add matching Make form field |
+| `isSort` | Used in `params` — add matching Make form field |
+| `limit` | Used in `params` — add matching Make form field |
+| `pageNum` | Used in `params` — add matching Make form field |
+| `startDate` | Used in `params` — add matching Make form field |
 
 ### Response mapping (Search)
 
 | Field | Expression |
-| ----- | ----------- |
+|-------|------------|
 | `iterate` | `{{body.data.refundDetailList}}` |
 | `output` | `{{item}}` |
 
-### Module Communication — reference (`jsonc`, matches `fetchRefundList.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1278,20 +914,19 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data.refundDetailList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchRefundList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchRefundList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "isSort": "{{ifempty(parameters.isSort; true)}}"
         }
     },
@@ -1303,27 +938,23 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data.refundDetailList iterate path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/fetchRefundList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchRefundList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "isSort": "{{ifempty(parameters.isSort; true)}}"
         }
     },
@@ -1336,101 +967,28 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 
 ---
 
-## 9. `settlementBillList` (Search, RTDD)
-
+## 9. `settlementBillList` (Search (RTDD))
 **Source:** [`app/modules/settlementBillList.jsonc`](../app/modules/settlementBillList.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
-
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `settlementStartTime` | `datetime` | Yes | — | RTDD field names |
-| `settlementEndTime` | `datetime` | Yes | — | RTDD field names |
-| `pageNum` | `integer` | No | `1` | — |
-| `pageSize` | `integer` | No | `20` | Typical max `50` |
-| `settlementBillId` | `text` | No | — | — |
-| `settleStatus` | `select` | No | — | `BANK_INITIATED` / `PAYOUT_SETTLED` / `PAYOUT_UNSETTLED` / `WAIT_FOR_SETTLE` |
-| `utrNo` | `text` | No | — | — |
-
-### Mappable parameters (`JSON`, paste)
-
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "settlementStartTime",
-    "label": "Settlement start time",
-    "type": "datetime",
-    "required": true
-  },
-  {
-    "name": "settlementEndTime",
-    "label": "Settlement end time",
-    "type": "datetime",
-    "required": true
-  },
-  {
-    "name": "pageNum",
-    "label": "Page number",
-    "type": "integer",
-    "required": false,
-    "default": 1
-  },
-  {
-    "name": "pageSize",
-    "label": "Page size (max 50)",
-    "type": "integer",
-    "required": false,
-    "default": 20
-  },
-  {
-    "name": "settlementBillId",
-    "label": "Settlement bill ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "settleStatus",
-    "label": "Settlement status",
-    "type": "select",
-    "required": false,
-    "options": [
-      {
-        "label": "Bank initiated",
-        "value": "BANK_INITIATED"
-      },
-      {
-        "label": "Payout settled",
-        "value": "PAYOUT_SETTLED"
-      },
-      {
-        "label": "Payout unsettled",
-        "value": "PAYOUT_UNSETTLED"
-      },
-      {
-        "label": "Wait for settle",
-        "value": "WAIT_FOR_SETTLE"
-      }
-    ]
-  },
-  {
-    "name": "utrNo",
-    "label": "UTR number",
-    "type": "text",
-    "required": false
-  }
-]
-```
+| Parameter `name` | Notes |
+|---|---|
+| `limit` | Used in `params` — add matching Make form field |
+| `pageNum` | Used in `params` — add matching Make form field |
+| `settleStatus` | Used in `params` — add matching Make form field |
+| `settlementBillId` | Used in `params` — add matching Make form field |
+| `settlementEndTime` | Used in `params` — add matching Make form field |
+| `settlementStartTime` | Used in `params` — add matching Make form field |
+| `utrNo` | Used in `params` — add matching Make form field |
 
 ### Response mapping (Search)
 
 | Field | Expression |
-| ----- | ----------- |
+|-------|------------|
 | `iterate` | `{{body.data.body.settleBillList}}` |
 | `output` | `{{item}}` |
 
-### Module Communication — reference (`jsonc`, matches `settlementBillList.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1452,20 +1010,19 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data.body.settleBillList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/settlementBillList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementBillId": "{{parameters.settlementBillId}}",
             "settleStatus": "{{parameters.settleStatus}}",
             "utrNo": "{{parameters.utrNo}}"
@@ -1479,27 +1036,23 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data.body.settleBillList iterate path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/settlementBillList?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementBillId": "{{parameters.settlementBillId}}",
             "settleStatus": "{{parameters.settleStatus}}",
             "utrNo": "{{parameters.utrNo}}"
@@ -1514,69 +1067,26 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 
 ---
 
-## 10. `settlementTxnListByDate` (Search, RTDD)
-
+## 10. `settlementTxnListByDate` (Search (RTDD))
 **Source:** [`app/modules/settlementTxnListByDate.jsonc`](../app/modules/settlementTxnListByDate.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
-
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `startDate` | `datetime` | Yes | — | `YYYY-MM-DD HH:mm:ss` |
-| `endDate` | `datetime` | Yes | — | `YYYY-MM-DD HH:mm:ss` |
-| `pageNum` | `integer` | No | `1` | — |
-| `pageSize` | `integer` | No | `20` | — |
-| `settlementOrderId` | `text` | No | — | — |
-
-### Mappable parameters (`JSON`, paste)
-
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "startDate",
-    "label": "Start date/time",
-    "type": "datetime",
-    "required": true
-  },
-  {
-    "name": "endDate",
-    "label": "End date/time",
-    "type": "datetime",
-    "required": true
-  },
-  {
-    "name": "pageNum",
-    "label": "Page number",
-    "type": "integer",
-    "required": false,
-    "default": 1
-  },
-  {
-    "name": "pageSize",
-    "label": "Page size",
-    "type": "integer",
-    "required": false,
-    "default": 20
-  },
-  {
-    "name": "settlementOrderId",
-    "label": "Settlement order ID",
-    "type": "text",
-    "required": false
-  }
-]
-```
+| Parameter `name` | Notes |
+|---|---|
+| `endDate` | Used in `params` — add matching Make form field |
+| `limit` | Used in `params` — add matching Make form field |
+| `pageNum` | Used in `params` — add matching Make form field |
+| `settlementOrderId` | Used in `params` — add matching Make form field |
+| `startDate` | Used in `params` — add matching Make form field |
 
 ### Response mapping (Search)
 
 | Field | Expression |
-| ----- | ----------- |
+|-------|------------|
 | `iterate` | `{{body.data.body.txnList}}` |
 | `output` | `{{item}}` |
 
-### Module Communication — reference (`jsonc`, matches `settlementTxnListByDate.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1593,20 +1103,19 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data.body.txnList iterate path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/settlementTxnListByDate?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementOrderId": "{{parameters.settlementOrderId}}"
         }
     },
@@ -1618,27 +1127,23 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data.body.txnList iterate path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/settlementTxnListByDate?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD HH:mm:ss')}}",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.pageSize; 20)}}",
+            "pageSize": "{{ifempty(parameters.limit; 20)}}",
             "settlementOrderId": "{{parameters.settlementOrderId}}"
         }
     },
@@ -1652,52 +1157,21 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 11. `fetchSubscriptionStatus` (Action)
-
 **Source:** [`app/modules/fetchSubscriptionStatus.jsonc`](../app/modules/fetchSubscriptionStatus.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `custId` | Used in `params` — add matching Make form field |
+| `linkId` | Used in `params` — add matching Make form field |
+| `orderId` | Used in `params` — add matching Make form field |
+| `subsId` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `subsId` | `text` | No | — | Provide ≥1 identifier across this row |
-| `orderId` | `text` | No | — | — |
-| `linkId` | `text` | No | — | — |
-| `custId` | `text` | No | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "subsId",
-    "label": "Subscription ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "orderId",
-    "label": "Order ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "linkId",
-    "label": "Link ID",
-    "type": "text",
-    "required": false
-  },
-  {
-    "name": "custId",
-    "label": "Customer ID",
-    "type": "text",
-    "required": false
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `fetchSubscriptionStatus.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1713,15 +1187,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/fetchSubscriptionStatus?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchSubscriptionStatus?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}",
             "orderId": "{{parameters.orderId}}",
@@ -1735,22 +1208,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/fetchSubscriptionStatus?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/fetchSubscriptionStatus?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}",
             "orderId": "{{parameters.orderId}}",
@@ -1767,48 +1236,19 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 12. `pauseResumeSubscription` (Action)
-
 **Source:** [`app/modules/pauseResumeSubscription.jsonc`](../app/modules/pauseResumeSubscription.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `status` | Used in `params` — add matching Make form field |
+| `subsId` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `subsId` | `text` | Yes | — | — |
-| `status` | `select` | Yes | — | `SUSPENDED` / `ACTIVE` |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "subsId",
-    "label": "Subscription ID",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "status",
-    "label": "Subscription status action",
-    "type": "select",
-    "required": true,
-    "options": [
-      {
-        "label": "Suspended (pause)",
-        "value": "SUSPENDED"
-      },
-      {
-        "label": "Active (resume)",
-        "value": "ACTIVE"
-      }
-    ]
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `pauseResumeSubscription.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1824,15 +1264,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/pauseResumeSubscription?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/pauseResumeSubscription?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}",
             "status": "{{parameters.status}}"
@@ -1844,22 +1283,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/pauseResumeSubscription?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/pauseResumeSubscription?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}",
             "status": "{{parameters.status}}"
@@ -1874,31 +1309,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 13. `cancelSubscription` (Action)
-
 **Source:** [`app/modules/cancelSubscription.jsonc`](../app/modules/cancelSubscription.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `subsId` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `subsId` | `text` | Yes | — | — |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "subsId",
-    "label": "Subscription ID",
-    "type": "text",
-    "required": true
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `cancelSubscription.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -1912,15 +1334,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   Verify body.data path during E2E testing.
  */
 {
-    "url": "{{connection.baseUrl}}/make/cancelSubscription?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/cancelSubscription?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}"
         }
@@ -1931,22 +1352,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
-{ status, function, requestId, data: <paytm_response> }
- *   Verify body.data path during E2E testing.
- */
 {
-    "url": "{{connection.baseUrl}}/make/cancelSubscription?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/cancelSubscription?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "subsId": "{{parameters.subsId}}"
         }
@@ -1960,74 +1377,21 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 ---
 
 ## 14. `makeApiCall` (Universal)
-
 **Source:** [`app/modules/makeApiCall.jsonc`](../app/modules/makeApiCall.jsonc)
+### Mappable parameters
 
-### Mappable parameters (reference table)
+| Parameter `name` | Notes |
+|---|---|
+| `body` | Used in `params` — add matching Make form field |
+| `headers` | Used in `params` — add matching Make form field |
+| `method` | Used in `params` — add matching Make form field |
+| `url` | Used in `params` — add matching Make form field |
 
-| Parameter `name` | Make `type` | Required | Default | Notes |
-| ---------------- | ----------- | -------- | ------- | ----- |
-| `method` | `select` | Yes | — | HTTP verb |
-| `url` | `text` | Yes | — | Relative path only |
-| `headers` | `collection` | No | — | — |
-| `body` | `text` or app-specific | No | — | Raw JSON forwarded by proxy |
+### Response mapping
 
-### Mappable parameters (`JSON`, paste)
+| `output` | `{{body.data}}` |
 
-`name` must match `parameters.<name>` in Communication.
-
-```json
-[
-  {
-    "name": "method",
-    "label": "HTTP method",
-    "type": "select",
-    "required": true,
-    "options": [
-      {
-        "label": "GET",
-        "value": "GET"
-      },
-      {
-        "label": "POST",
-        "value": "POST"
-      },
-      {
-        "label": "PUT",
-        "value": "PUT"
-      },
-      {
-        "label": "PATCH",
-        "value": "PATCH"
-      },
-      {
-        "label": "DELETE",
-        "value": "DELETE"
-      }
-    ]
-  },
-  {
-    "name": "url",
-    "label": "Relative URL path",
-    "type": "text",
-    "required": true
-  },
-  {
-    "name": "headers",
-    "label": "Extra headers",
-    "type": "collection",
-    "required": false
-  },
-  {
-    "name": "body",
-    "label": "Request body",
-    "type": "text",
-    "required": false
-  }
-]
-```
-
-### Module Communication — reference (`jsonc`, matches `makeApiCall.jsonc`)
+### Module Communication — reference (`jsonc`)
 
 ```jsonc
 /**
@@ -2045,15 +1409,14 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
  *   corresponding Paytm endpoint, applying the correct AES checksum.
  */
 {
-    "url": "{{connection.baseUrl}}/make/makeApiCall?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/makeApiCall?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "method": "{{parameters.method}}",
             "url": "{{parameters.url}}",
@@ -2067,19 +1430,18 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 }
 ```
 
-### Module Communication (`JSON`, paste into Make)
+### Module Communication (`JSON`, paste)
 
 ```json
 {
-    "url": "{{connection.baseUrl}}/make/makeApiCall?mid={{connection.merchantId}}",
+    "url": "{{connection.baseUrl}}/integration/makeApiCall?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(createJSON(body); connection.keySecret)}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
-        "requestId": "{{formatDate(now; 'x')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
+        "requestId": "{{formatDate(now; 'X')}}000",
+        "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
             "method": "{{parameters.method}}",
             "url": "{{parameters.url}}",
@@ -2099,3 +1461,5 @@ If the Apps Editor rejects `//`, use this cleaned copy from the same file.
 
 - [`make-connection-paytm.md`](./make-connection-paytm.md)
 - [`api-mapping.md`](./api-mapping.md)
+- [`checksum-algorithm.md`](./checksum-algorithm.md)
+- [`e2e-integration-testing.md`](./e2e-integration-testing.md)
