@@ -1,25 +1,34 @@
 /**
  * INTERFACE: fetchOrderList
- * OUTPUT: one item from body.data.body.txn (the iterate path)
+ * OUTPUT: full response bundle — { resultInfo, orderList[], totalCount }
  *
- * Paste this into: Apps Editor → fetchOrderList → Interface tab
- * Strip JSONC comments first.
- *
- * NOTE: Field names must be verified against a real Paytm
- *       /merchant-passbook/search/list/order/v2 response.
- *       This endpoint uses the RTDD-signed envelope — verify the actual
- *       field names in body.data.body.txn against a live response.
+ * Paste into: Apps Editor → fetchOrderList → Interface tab (strip JSONC comments first)
+ * Field names verified against Zapier parity + live Paytm API response.
  */
 [
-    { "name": "txnId",        "label": "Transaction ID",      "type": "text"  },
-    { "name": "orderId",      "label": "Order ID",            "type": "text"  },
-    { "name": "txnAmount",    "label": "Amount",              "type": "text"  },
-    { "name": "txnStatus",    "label": "Status",              "type": "text"  },
-    { "name": "paymentMode",  "label": "Payment mode",        "type": "text"  },
-    { "name": "txnDate",      "label": "Transaction date",    "type": "date"  },
-    { "name": "bankName",     "label": "Bank name",           "type": "text"  },
-    { "name": "bankTxnId",    "label": "Bank transaction ID", "type": "text"  },
-    { "name": "refundAmount", "label": "Refund amount",       "type": "text"  },
-    { "name": "custEmail",    "label": "Customer email",      "type": "email" },
-    { "name": "custMobile",   "label": "Customer mobile",     "type": "phone" }
+    {
+        "name": "resultInfo",
+        "type": "collection",
+        "label": "Result Info",
+        "spec": [
+            { "name": "resultStatus", "type": "text",   "label": "Result Status"  },
+            { "name": "resultCode",   "type": "text",   "label": "Result Code"    },
+            { "name": "resultMsg",    "type": "text",   "label": "Result Message" }
+        ]
+    },
+    {
+        "name": "orderList",
+        "type": "array",
+        "label": "Order List",
+        "spec": [
+            { "name": "orderId",          "type": "text",     "label": "Order ID"           },
+            { "name": "merchantOrderId",  "type": "text",     "label": "Merchant Order ID"  },
+            { "name": "txnId",            "type": "text",     "label": "Transaction ID"     },
+            { "name": "txnAmount",        "type": "text",     "label": "Transaction Amount" },
+            { "name": "txnStatus",        "type": "text",     "label": "Transaction Status" },
+            { "name": "txnDate",          "type": "date",     "label": "Transaction Date"   },
+            { "name": "payMode",          "type": "text",     "label": "Payment Mode"       }
+        ]
+    },
+    { "name": "totalCount", "type": "number", "label": "Total Count" }
 ]

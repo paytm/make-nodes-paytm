@@ -1,45 +1,37 @@
 /**
  * MODULE: fetchOrderList
- * TYPE: Search (returns a list of orders)
- * PAYTM ENDPOINT: POST /merchant-passbook/search/list/order/v2 (via proxy)
+ * TYPE: Search (returns order list bundle)
  * PROXY FUNCTION: fetchOrderList
+ * DOWNSTREAM: POST /merchant-passbook/search/list/order/v2
  *
- * Standard Checksum API — proxy builds the AES-signed {body, head} envelope.
- * No checksum logic in IML.
- *
- * AUTH PATTERN (same for all modules)
- *   X-Signature = HMAC-SHA256(requestId, connection.keySecret)
- *   The proxy verifies this, then signs the downstream Paytm request.
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Iterate path for the order list: body.data.body.txn
- *   Verify this path against the actual Paytm response during E2E testing.
+ * KEY NOTES (from Zapier parity):
+ *   - orderSearchStatus "ALL" is INVALID at Paytm; map to "SUCCESS|FAILURE|PENDING"
+ *   - Dates must be IST datetime: "YYYY-MM-DDTHH:mm:ss+05:30"
+ *   - isSort must be boolean true
+ *   - X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
  */
 {
     "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
     "method": "POST",
     "headers": {
-        "X-Signature": "{{sha256(body.requestId; 'hex'; connection.keySecret; 'utf8')}}"
+        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
     },
     "body": {
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
-            "orderSearchStatus": "{{ifempty(parameters.orderSearchStatus; 'ALL')}}",
-            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'TRANSACTION')}}",
+            "mid": "{{connection.merchantId}}",
+            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
+            "orderSearchStatus": "{{if(parameters.orderSearchStatus == 'ALL'; 'SUCCESS|FAILURE|PENDING'; ifempty(parameters.orderSearchStatus; 'SUCCESS'))}}",
+            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'ALL')}}",
             "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
             "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "merchantOrderId": "{{parameters.merchantOrderId}}",
-            "payMode": "{{parameters.payMode}}"
+            "isSort": true
         }
     },
     "response": {
-        // Iterate over the order list returned by Paytm.
-        // Verify body.data.body.txn is the correct path during E2E testing.
-        "iterate": "{{body.data.body.txn}}",
-        "output": "{{item}}"
+        // Returns full response as one bundle: { resultInfo, orderList[], totalCount }
+        "output": "{{body.data}}"
     }
 }
