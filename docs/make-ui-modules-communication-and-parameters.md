@@ -2,13 +2,15 @@
 
 Use when wiring modules in **Apps Editor**: define **mappable parameters** first, then **Communication**. Each section mirrors the repo JSONC sources under `app/`.
 
+**Parameter definitions source:** [`make-module-parameters.json`](./make-module-parameters.json) (regenerate this doc after editing).
+
 **Canonical long-form tables:** [`api-mapping.md`](./api-mapping.md) § *Parameter Mapping*.
 
 **Typical paste order**
 
 1. **Base** — [`app/base.jsonc`](../app/base.jsonc) (Content-Type, default error, log sanitize).
 2. **Connection** — parameters JSON + Communication from [`app/connections/paytm.jsonc`](../app/connections/paytm.jsonc).
-3. **Per module** — mappable parameters + Communication JSON below.
+3. **Per module** — **Mappable parameters (`JSON`, paste)** then **Communication (`JSON`, paste)**.
 
 **IML (current repo)**
 
@@ -166,8 +168,8 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
  *   body cannot be accessed from connection headers in Make IML):
  *     X-Signature = HMAC-SHA256(merchantId, keySecret) — hex output
  *
- *   Every module request signs connection.merchantId (same message as connection save):
- *     X-Signature = HMAC-SHA256(merchantId, keySecret) — hex output
+ *   Every module request signs body.requestId:
+ *     X-Signature = HMAC-SHA256(requestId, keySecret) — hex output
  *
  *   The proxy accepts either form and verifies before forwarding to Paytm.
  *   keySecret never travels to Paytm — only the HMAC header does.
@@ -246,28 +248,151 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 1. `createPaymentLink` (Action)
-**Source:** [`app/modules/createPaymentLink.jsonc`](../app/modules/createPaymentLink.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `amount` | Used in `params` — add matching Make form field |
-| `bindLinkIdMobile` | Used in `params` — add matching Make form field |
-| `customerEmail` | Used in `params` — add matching Make form field |
-| `customerId` | Used in `params` — add matching Make form field |
-| `customerMobile` | Used in `params` — add matching Make form field |
-| `customerName` | Used in `params` — add matching Make form field |
-| `expiryDate` | Used in `params` — add matching Make form field |
-| `linkDescription` | Used in `params` — add matching Make form field |
-| `linkName` | Used in `params` — add matching Make form field |
-| `linkNotes` | Used in `params` — add matching Make form field |
-| `linkType` | Used in `params` — add matching Make form field |
-| `maxPaymentsAllowed` | Used in `params` — add matching Make form field |
-| `merchantRequestId` | Used in `params` — add matching Make form field |
-| `partialPayment` | Used in `params` — add matching Make form field |
-| `sendEmail` | Used in `params` — add matching Make form field |
-| `sendSms` | Used in `params` — add matching Make form field |
-| `statusCallbackUrl` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/createPaymentLink.jsonc`](../app/modules/createPaymentLink.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `createPaymentLink`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `linkName` | `text` | Yes | — |
+| `linkDescription` | `text` | Yes | — |
+| `linkType` | `select` | Yes | — |
+| `amount` | `number` | No | — |
+| `partialPayment` | `boolean` | No | — |
+| `bindLinkIdMobile` | `boolean` | No | — |
+| `maxPaymentsAllowed` | `integer` | No | — |
+| `customerName` | `text` | No | — |
+| `customerEmail` | `text` | No | — |
+| `customerMobile` | `text` | No | — |
+| `expiryDate` | `date` | No | — |
+| `sendSms` | `boolean` | No | — |
+| `sendEmail` | `boolean` | No | — |
+| `merchantRequestId` | `text` | No | — |
+| `customerId` | `text` | No | — |
+| `linkNotes` | `text` | No | — |
+| `statusCallbackUrl` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "linkName",
+    "label": "Link name",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "linkDescription",
+    "label": "Link description",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "linkType",
+    "label": "Link type",
+    "type": "select",
+    "required": true,
+    "options": [
+      {
+        "label": "Fixed amount",
+        "value": "FIXED"
+      },
+      {
+        "label": "Generic (any amount)",
+        "value": "GENERIC"
+      }
+    ]
+  },
+  {
+    "name": "amount",
+    "label": "Amount",
+    "type": "number",
+    "required": false
+  },
+  {
+    "name": "partialPayment",
+    "label": "Partial payment allowed",
+    "type": "boolean",
+    "required": false
+  },
+  {
+    "name": "bindLinkIdMobile",
+    "label": "Bind link to mobile",
+    "type": "boolean",
+    "required": false
+  },
+  {
+    "name": "maxPaymentsAllowed",
+    "label": "Max payments allowed",
+    "type": "integer",
+    "required": false
+  },
+  {
+    "name": "customerName",
+    "label": "Customer name",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerEmail",
+    "label": "Customer email",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerMobile",
+    "label": "Customer mobile",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "expiryDate",
+    "label": "Expiry date",
+    "type": "date",
+    "required": false
+  },
+  {
+    "name": "sendSms",
+    "label": "Send SMS",
+    "type": "boolean",
+    "required": false
+  },
+  {
+    "name": "sendEmail",
+    "label": "Send email",
+    "type": "boolean",
+    "required": false
+  },
+  {
+    "name": "merchantRequestId",
+    "label": "Merchant request ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerId",
+    "label": "Customer ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "linkNotes",
+    "label": "Link notes",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "statusCallbackUrl",
+    "label": "Status callback URL",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -372,20 +497,103 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 2. `fetchPaymentLinks` (Search)
-**Source:** [`app/modules/fetchPaymentLinks.jsonc`](../app/modules/fetchPaymentLinks.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `customerEmail` | Used in `params` — add matching Make form field |
-| `customerName` | Used in `params` — add matching Make form field |
-| `customerPhone` | Used in `params` — add matching Make form field |
-| `filterFromDate` | Used in `params` — add matching Make form field |
-| `filterIsActive` | Used in `params` — add matching Make form field |
-| `filterToDate` | Used in `params` — add matching Make form field |
-| `linkId` | Used in `params` — add matching Make form field |
-| `merchantRequestId` | Used in `params` — add matching Make form field |
-| `paymentStatus` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/fetchPaymentLinks.jsonc`](../app/modules/fetchPaymentLinks.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `fetchPaymentLinks`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `paymentStatus` | `select` | No | — |
+| `merchantRequestId` | `text` | No | — |
+| `linkId` | `text` | No | — |
+| `customerName` | `text` | No | — |
+| `customerEmail` | `text` | No | — |
+| `customerPhone` | `text` | No | — |
+| `filterFromDate` | `date` | No | — |
+| `filterToDate` | `date` | No | — |
+| `filterIsActive` | `boolean` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "paymentStatus",
+    "label": "Payment status",
+    "type": "select",
+    "required": false,
+    "options": [
+      {
+        "label": "Expired",
+        "value": "EXPIRED"
+      },
+      {
+        "label": "Initiated",
+        "value": "INIT"
+      },
+      {
+        "label": "Paid",
+        "value": "PAID"
+      },
+      {
+        "label": "Pending",
+        "value": "PENDING"
+      }
+    ]
+  },
+  {
+    "name": "merchantRequestId",
+    "label": "Merchant request ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "linkId",
+    "label": "Link ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerName",
+    "label": "Customer name",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerEmail",
+    "label": "Customer email",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "customerPhone",
+    "label": "Customer phone",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "filterFromDate",
+    "label": "Filter from date",
+    "type": "date",
+    "required": false
+  },
+  {
+    "name": "filterToDate",
+    "label": "Filter to date",
+    "type": "date",
+    "required": false
+  },
+  {
+    "name": "filterIsActive",
+    "label": "Filter active links only",
+    "type": "boolean",
+    "required": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -472,16 +680,58 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 3. `fetchTransactionsForLink` (Search)
-**Source:** [`app/modules/fetchTransactionsForLink.jsonc`](../app/modules/fetchTransactionsForLink.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `fetchAllTxns` | Used in `params` — add matching Make form field |
-| `limit` | Used in `params` — add matching Make form field |
-| `linkId` | Used in `params` — add matching Make form field |
-| `searchEndDate` | Used in `params` — add matching Make form field |
-| `searchStartDate` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/fetchTransactionsForLink.jsonc`](../app/modules/fetchTransactionsForLink.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `fetchTransactionsForLink`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `linkId` | `text` | Yes | — |
+| `searchStartDate` | `date` | No | — |
+| `searchEndDate` | `date` | No | — |
+| `fetchAllTxns` | `boolean` | No | — |
+| `limit` | `integer` | No | 20 |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "linkId",
+    "label": "Link ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "searchStartDate",
+    "label": "Search start date",
+    "type": "date",
+    "required": false
+  },
+  {
+    "name": "searchEndDate",
+    "label": "Search end date",
+    "type": "date",
+    "required": false
+  },
+  {
+    "name": "fetchAllTxns",
+    "label": "Fetch all transactions",
+    "type": "boolean",
+    "required": false
+  },
+  {
+    "name": "limit",
+    "label": "Page size",
+    "type": "integer",
+    "required": false,
+    "default": 20
+  }
+]
+```
 
 ### Response mapping (Search)
 
@@ -560,17 +810,96 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 4. `fetchOrderList` (Search)
-**Source:** [`app/modules/fetchOrderList.jsonc`](../app/modules/fetchOrderList.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `endDate` | Used in `params` — add matching Make form field |
-| `limit` | Used in `params` — add matching Make form field |
-| `orderSearchStatus` | Used in `params` — add matching Make form field |
-| `orderSearchType` | Used in `params` — add matching Make form field |
-| `pageNumber` | Used in `params` — add matching Make form field |
-| `startDate` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/fetchOrderList.jsonc`](../app/modules/fetchOrderList.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `fetchOrderList`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `startDate` | `date` | Yes | — |
+| `endDate` | `date` | Yes | — |
+| `orderSearchStatus` | `select` | No | SUCCESS |
+| `orderSearchType` | `select` | No | ALL |
+| `pageNumber` | `integer` | No | 1 |
+| `limit` | `integer` | No | 20 |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "startDate",
+    "label": "Start date",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "endDate",
+    "label": "End date",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "orderSearchStatus",
+    "label": "Order search status",
+    "type": "select",
+    "required": false,
+    "default": "SUCCESS",
+    "options": [
+      {
+        "label": "All (maps to SUCCESS|FAILURE|PENDING)",
+        "value": "ALL"
+      },
+      {
+        "label": "Success",
+        "value": "SUCCESS"
+      },
+      {
+        "label": "Failure",
+        "value": "FAILURE"
+      },
+      {
+        "label": "Pending",
+        "value": "PENDING"
+      }
+    ]
+  },
+  {
+    "name": "orderSearchType",
+    "label": "Order search type",
+    "type": "select",
+    "required": false,
+    "default": "ALL",
+    "options": [
+      {
+        "label": "All",
+        "value": "ALL"
+      },
+      {
+        "label": "Transaction",
+        "value": "TRANSACTION"
+      }
+    ]
+  },
+  {
+    "name": "pageNumber",
+    "label": "Page number",
+    "type": "integer",
+    "required": false,
+    "default": 1
+  },
+  {
+    "name": "limit",
+    "label": "Page size",
+    "type": "integer",
+    "required": false,
+    "default": 20
+  }
+]
+```
 
 ### Response mapping
 
@@ -650,14 +979,45 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 5. `orderDetail` (Action (RTDD / settlement via proxy))
-**Source:** [`app/modules/orderDetail.jsonc`](../app/modules/orderDetail.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `bizOrderId` | Used in `params` — add matching Make form field |
-| `excludePaymentsData` | Used in `params` — add matching Make form field |
-| `isSettlementInfo` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/orderDetail.jsonc`](../app/modules/orderDetail.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `orderDetail`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `bizOrderId` | `text` | Yes | — |
+| `isSettlementInfo` | `boolean` | No | `false` |
+| `excludePaymentsData` | `boolean` | No | `false` |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "bizOrderId",
+    "label": "Business order ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "isSettlementInfo",
+    "label": "Include settlement info",
+    "type": "boolean",
+    "required": false,
+    "default": false
+  },
+  {
+    "name": "excludePaymentsData",
+    "label": "Exclude payments data",
+    "type": "boolean",
+    "required": false,
+    "default": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -728,16 +1088,57 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 6. `initiateRefund` (Action)
-**Source:** [`app/modules/initiateRefund.jsonc`](../app/modules/initiateRefund.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `comments` | Used in `params` — add matching Make form field |
-| `orderId` | Used in `params` — add matching Make form field |
-| `refId` | Used in `params` — add matching Make form field |
-| `refundAmount` | Used in `params` — add matching Make form field |
-| `txnId` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/initiateRefund.jsonc`](../app/modules/initiateRefund.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `initiateRefund`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `orderId` | `text` | Yes | — |
+| `txnId` | `text` | Yes | — |
+| `refId` | `text` | Yes | — |
+| `refundAmount` | `number` | Yes | — |
+| `comments` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "orderId",
+    "label": "Order ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "txnId",
+    "label": "Transaction ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "refId",
+    "label": "Refund reference ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "refundAmount",
+    "label": "Refund amount",
+    "type": "number",
+    "required": true
+  },
+  {
+    "name": "comments",
+    "label": "Comments",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -811,13 +1212,36 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 7. `checkRefundStatus` (Action)
-**Source:** [`app/modules/checkRefundStatus.jsonc`](../app/modules/checkRefundStatus.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `orderId` | Used in `params` — add matching Make form field |
-| `refId` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/checkRefundStatus.jsonc`](../app/modules/checkRefundStatus.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `checkRefundStatus`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `orderId` | `text` | Yes | — |
+| `refId` | `text` | Yes | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "orderId",
+    "label": "Order ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "refId",
+    "label": "Refund reference ID",
+    "type": "text",
+    "required": true
+  }
+]
+```
 
 ### Response mapping
 
@@ -882,16 +1306,60 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 8. `fetchRefundList` (Search)
-**Source:** [`app/modules/fetchRefundList.jsonc`](../app/modules/fetchRefundList.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `endDate` | Used in `params` — add matching Make form field |
-| `isSort` | Used in `params` — add matching Make form field |
-| `limit` | Used in `params` — add matching Make form field |
-| `pageNum` | Used in `params` — add matching Make form field |
-| `startDate` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/fetchRefundList.jsonc`](../app/modules/fetchRefundList.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `fetchRefundList`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `startDate` | `date` | Yes | — |
+| `endDate` | `date` | Yes | — |
+| `pageNum` | `integer` | No | 1 |
+| `limit` | `integer` | No | 20 |
+| `isSort` | `boolean` | No | `true` |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "startDate",
+    "label": "Start date",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "endDate",
+    "label": "End date",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "pageNum",
+    "label": "Page number",
+    "type": "integer",
+    "required": false,
+    "default": 1
+  },
+  {
+    "name": "limit",
+    "label": "Page size",
+    "type": "integer",
+    "required": false,
+    "default": 20
+  },
+  {
+    "name": "isSort",
+    "label": "Sort results",
+    "type": "boolean",
+    "required": false,
+    "default": true
+  }
+]
+```
 
 ### Response mapping (Search)
 
@@ -968,18 +1436,91 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 9. `settlementBillList` (Search (RTDD))
-**Source:** [`app/modules/settlementBillList.jsonc`](../app/modules/settlementBillList.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `limit` | Used in `params` — add matching Make form field |
-| `pageNum` | Used in `params` — add matching Make form field |
-| `settleStatus` | Used in `params` — add matching Make form field |
-| `settlementBillId` | Used in `params` — add matching Make form field |
-| `settlementEndTime` | Used in `params` — add matching Make form field |
-| `settlementStartTime` | Used in `params` — add matching Make form field |
-| `utrNo` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/settlementBillList.jsonc`](../app/modules/settlementBillList.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `settlementBillList`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `settlementStartTime` | `date` | Yes | — |
+| `settlementEndTime` | `date` | Yes | — |
+| `pageNum` | `integer` | No | 1 |
+| `limit` | `integer` | No | 20 |
+| `settlementBillId` | `text` | No | — |
+| `settleStatus` | `select` | No | — |
+| `utrNo` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "settlementStartTime",
+    "label": "Settlement start time",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "settlementEndTime",
+    "label": "Settlement end time",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "pageNum",
+    "label": "Page number",
+    "type": "integer",
+    "required": false,
+    "default": 1
+  },
+  {
+    "name": "limit",
+    "label": "Page size (max 50)",
+    "type": "integer",
+    "required": false,
+    "default": 20
+  },
+  {
+    "name": "settlementBillId",
+    "label": "Settlement bill ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "settleStatus",
+    "label": "Settlement status",
+    "type": "select",
+    "required": false,
+    "options": [
+      {
+        "label": "Bank initiated",
+        "value": "BANK_INITIATED"
+      },
+      {
+        "label": "Payout settled",
+        "value": "PAYOUT_SETTLED"
+      },
+      {
+        "label": "Payout unsettled",
+        "value": "PAYOUT_UNSETTLED"
+      },
+      {
+        "label": "Wait for settle",
+        "value": "WAIT_FOR_SETTLE"
+      }
+    ]
+  },
+  {
+    "name": "utrNo",
+    "label": "UTR number",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping (Search)
 
@@ -1068,16 +1609,59 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 10. `settlementTxnListByDate` (Search (RTDD))
-**Source:** [`app/modules/settlementTxnListByDate.jsonc`](../app/modules/settlementTxnListByDate.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `endDate` | Used in `params` — add matching Make form field |
-| `limit` | Used in `params` — add matching Make form field |
-| `pageNum` | Used in `params` — add matching Make form field |
-| `settlementOrderId` | Used in `params` — add matching Make form field |
-| `startDate` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/settlementTxnListByDate.jsonc`](../app/modules/settlementTxnListByDate.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `settlementTxnListByDate`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `startDate` | `date` | Yes | — |
+| `endDate` | `date` | Yes | — |
+| `pageNum` | `integer` | No | 1 |
+| `limit` | `integer` | No | 20 |
+| `settlementOrderId` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "startDate",
+    "label": "Start date/time",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "endDate",
+    "label": "End date/time",
+    "type": "date",
+    "required": true
+  },
+  {
+    "name": "pageNum",
+    "label": "Page number",
+    "type": "integer",
+    "required": false,
+    "default": 1
+  },
+  {
+    "name": "limit",
+    "label": "Page size",
+    "type": "integer",
+    "required": false,
+    "default": 20
+  },
+  {
+    "name": "settlementOrderId",
+    "label": "Settlement order ID",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping (Search)
 
@@ -1157,15 +1741,50 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 11. `fetchSubscriptionStatus` (Action)
-**Source:** [`app/modules/fetchSubscriptionStatus.jsonc`](../app/modules/fetchSubscriptionStatus.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `custId` | Used in `params` — add matching Make form field |
-| `linkId` | Used in `params` — add matching Make form field |
-| `orderId` | Used in `params` — add matching Make form field |
-| `subsId` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/fetchSubscriptionStatus.jsonc`](../app/modules/fetchSubscriptionStatus.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `fetchSubscriptionStatus`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `subsId` | `text` | No | — |
+| `orderId` | `text` | No | — |
+| `linkId` | `text` | No | — |
+| `custId` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "subsId",
+    "label": "Subscription ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "orderId",
+    "label": "Order ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "linkId",
+    "label": "Link ID",
+    "type": "text",
+    "required": false
+  },
+  {
+    "name": "custId",
+    "label": "Customer ID",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -1236,13 +1855,46 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 12. `pauseResumeSubscription` (Action)
-**Source:** [`app/modules/pauseResumeSubscription.jsonc`](../app/modules/pauseResumeSubscription.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `status` | Used in `params` — add matching Make form field |
-| `subsId` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/pauseResumeSubscription.jsonc`](../app/modules/pauseResumeSubscription.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `pauseResumeSubscription`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `subsId` | `text` | Yes | — |
+| `status` | `select` | Yes | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "subsId",
+    "label": "Subscription ID",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "status",
+    "label": "Status",
+    "type": "select",
+    "required": true,
+    "options": [
+      {
+        "label": "Suspended (pause)",
+        "value": "SUSPENDED"
+      },
+      {
+        "label": "Active (resume)",
+        "value": "ACTIVE"
+      }
+    ]
+  }
+]
+```
 
 ### Response mapping
 
@@ -1309,12 +1961,29 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 13. `cancelSubscription` (Action)
-**Source:** [`app/modules/cancelSubscription.jsonc`](../app/modules/cancelSubscription.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `subsId` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/cancelSubscription.jsonc`](../app/modules/cancelSubscription.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `cancelSubscription`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `subsId` | `text` | Yes | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "subsId",
+    "label": "Subscription ID",
+    "type": "text",
+    "required": true
+  }
+]
+```
 
 ### Response mapping
 
@@ -1377,15 +2046,72 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 ---
 
 ## 14. `makeApiCall` (Universal)
-**Source:** [`app/modules/makeApiCall.jsonc`](../app/modules/makeApiCall.jsonc)
-### Mappable parameters
 
-| Parameter `name` | Notes |
-|---|---|
-| `body` | Used in `params` — add matching Make form field |
-| `headers` | Used in `params` — add matching Make form field |
-| `method` | Used in `params` — add matching Make form field |
-| `url` | Used in `params` — add matching Make form field |
+**Source:** [`app/modules/makeApiCall.jsonc`](../app/modules/makeApiCall.jsonc) · parameters: [`make-module-parameters.json`](./make-module-parameters.json) → `makeApiCall`
+
+### Mappable parameters (reference table)
+
+| Parameter `name` | Make `type` | Required | Default |
+|---|---|---|---|
+| `method` | `select` | Yes | — |
+| `url` | `text` | Yes | — |
+| `headers` | `collection` | No | — |
+| `body` | `text` | No | — |
+
+### Mappable parameters (`JSON`, paste into Make)
+
+`name` must match `parameters.<name>` in Communication.
+
+```json
+[
+  {
+    "name": "method",
+    "label": "HTTP method",
+    "type": "select",
+    "required": true,
+    "options": [
+      {
+        "label": "GET",
+        "value": "GET"
+      },
+      {
+        "label": "POST",
+        "value": "POST"
+      },
+      {
+        "label": "PUT",
+        "value": "PUT"
+      },
+      {
+        "label": "PATCH",
+        "value": "PATCH"
+      },
+      {
+        "label": "DELETE",
+        "value": "DELETE"
+      }
+    ]
+  },
+  {
+    "name": "url",
+    "label": "Relative URL path (e.g. /link/fetch)",
+    "type": "text",
+    "required": true
+  },
+  {
+    "name": "headers",
+    "label": "Additional headers",
+    "type": "collection",
+    "required": false
+  },
+  {
+    "name": "body",
+    "label": "Request body (JSON)",
+    "type": "text",
+    "required": false
+  }
+]
+```
 
 ### Response mapping
 
@@ -1459,6 +2185,7 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ## Related
 
+- [`make-module-parameters.json`](./make-module-parameters.json) — editable parameter definitions for this doc
 - [`make-connection-paytm.md`](./make-connection-paytm.md)
 - [`api-mapping.md`](./api-mapping.md)
 - [`checksum-algorithm.md`](./checksum-algorithm.md)
