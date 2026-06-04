@@ -2,8 +2,8 @@
  * INTERFACE: fetchOrderList
  * OUTPUT: full response bundle — { resultInfo, orderList[], totalCount }
  *
- * Paste into: Apps Editor → fetchOrderList → Interface tab
- * Strip JSONC comments first.
+ * Paste into: Apps Editor → fetchOrderList → Interface tab (strip JSONC comments first)
+ * Field names verified against Zapier parity + live Paytm API response.
  */
 [
     {
@@ -21,16 +21,14 @@
         "type": "array",
         "label": "Order List",
         "spec": [
-            { "name": "orderId",    "type": "text", "label": "Order ID"            },
-            { "name": "txnId",      "type": "text", "label": "Transaction ID"      },
-            { "name": "txnAmount",  "type": "text", "label": "Transaction Amount"  },
-            { "name": "txnStatus",  "type": "text", "label": "Transaction Status"  },
-            { "name": "txnDate",    "type": "text", "label": "Transaction Date"    }
+            { "name": "orderId",          "type": "text",     "label": "Order ID"           },
+            { "name": "merchantOrderId",  "type": "text",     "label": "Merchant Order ID"  },
+            { "name": "txnId",            "type": "text",     "label": "Transaction ID"     },
+            { "name": "txnAmount",        "type": "text",     "label": "Transaction Amount" },
+            { "name": "txnStatus",        "type": "text",     "label": "Transaction Status" },
+            { "name": "txnDate",          "type": "date",     "label": "Transaction Date"   },
+            { "name": "payMode",          "type": "text",     "label": "Payment Mode"       }
         ]
     },
-    {
-        "name": "totalCount",
-        "type": "number",
-        "label": "Total Count"
-    }
+    { "name": "totalCount", "type": "number", "label": "Total Count" }
 ]
