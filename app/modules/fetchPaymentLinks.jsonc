@@ -1,16 +1,14 @@
 /**
  * MODULE: fetchPaymentLinks
- * TYPE: Search (returns a list of payment links)
- * PAYTM ENDPOINT: POST /link/fetch (via proxy)
+ * TYPE: Search (returns payment links bundle)
  * PROXY FUNCTION: fetchPaymentLinks
+ * DOWNSTREAM: POST /link/fetch
  *
- * All parameters are optional — empty request returns all links.
- * linkType: FIXED / GENERIC
- * paymentStatus: CREATED / PENDING / SUCCESS / FAILED / EXPIRED
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data.linkDetailsList iterate path during E2E testing.
+ * KEY NOTES (Zapier parity):
+ *   - All params are optional; mid is always sent
+ *   - Dates go inside searchFilterRequestBody as DD/MM/YYYY
+ *   - paymentStatus choices: EXPIRED / INIT / PAID / PENDING
+ *   - X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
  */
 {
     "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
@@ -22,19 +20,21 @@
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "fromDate": "{{formatDate(parameters.fromDate; 'YYYY-MM-DD')}}",
-            "toDate": "{{formatDate(parameters.toDate; 'YYYY-MM-DD')}}",
-            "linkId": "{{parameters.linkId}}",
-            "merchantRequestId": "{{parameters.merchantRequestId}}",
-            "linkType": "{{parameters.linkType}}",
+            "mid": "{{connection.merchantId}}",
             "paymentStatus": "{{parameters.paymentStatus}}",
-            "isActive": "{{parameters.isActive}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}"
+            "merchantRequestId": "{{parameters.merchantRequestId}}",
+            "linkId": "{{parameters.linkId}}",
+            "customerName": "{{parameters.customerName}}",
+            "customerEmail": "{{parameters.customerEmail}}",
+            "customerPhone": "{{parameters.customerPhone}}",
+            "searchFilterRequestBody": {
+                "fromDate": "{{formatDate(parameters.filterFromDate; 'DD/MM/YYYY')}}",
+                "toDate": "{{formatDate(parameters.filterToDate; 'DD/MM/YYYY')}}",
+                "isActive": "{{parameters.filterIsActive}}"
+            }
         }
     },
     "response": {
-        // Verify body.data.linkDetailsList is the correct iterate path during E2E testing.
-        "iterate": "{{body.data.linkDetailsList}}",
-        "output": "{{item}}"
+        "output": "{{body.data}}"
     }
 }

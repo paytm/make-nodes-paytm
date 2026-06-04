@@ -1,30 +1,38 @@
 /**
  * INTERFACE: fetchPaymentLinks
- * OUTPUT: one item from body.data.linkDetailsList (the iterate path)
+ * OUTPUT: full response bundle from /link/fetch
  *
- * Paste this into: Apps Editor → fetchPaymentLinks → Interface tab
- * Strip JSONC comments first (scripts/validate-jsonc.sh).
- *
- * NOTE: Field names must be verified against a real Paytm /link/fetch response.
- *       Any fields that do not appear in the actual response should be removed.
+ * Paste into: Apps Editor → fetchPaymentLinks → Interface tab (strip JSONC comments first)
+ * Field names verified against Zapier parity.
  */
 [
-    { "name": "linkId",            "label": "Link ID",             "type": "text"    },
-    { "name": "linkName",          "label": "Link name",           "type": "text"    },
-    { "name": "linkDescription",   "label": "Description",         "type": "text"    },
-    { "name": "linkType",          "label": "Link type",           "type": "text"    },
-    { "name": "amount",            "label": "Amount",              "type": "text"    },
-    { "name": "linkUrl",           "label": "Payment URL",         "type": "url"     },
-    { "name": "linkStatus",        "label": "Link status",         "type": "text"    },
-    { "name": "paymentStatus",     "label": "Payment status",      "type": "text"    },
-    { "name": "isActive",          "label": "Is active",           "type": "boolean" },
-    { "name": "createdOn",         "label": "Created on",          "type": "date"    },
-    { "name": "expiryDate",        "label": "Expiry date",         "type": "date"    },
-    { "name": "totalCount",        "label": "Total payments",      "type": "number"  },
-    { "name": "merchantRequestId", "label": "Merchant request ID", "type": "text"    },
-    { "name": "customerId",        "label": "Customer ID",         "type": "text"    },
-    { "name": "custName",          "label": "Customer name",       "type": "text"    },
-    { "name": "custEmail",         "label": "Customer email",      "type": "email"   },
-    { "name": "custMobile",        "label": "Customer mobile",     "type": "phone"   },
-    { "name": "linkNotes",         "label": "Notes",               "type": "text"    }
+    {
+        "name": "resultInfo",
+        "type": "collection",
+        "label": "Result Info",
+        "spec": [
+            { "name": "resultStatus", "type": "text", "label": "Result Status"  },
+            { "name": "resultCode",   "type": "text", "label": "Result Code"    },
+            { "name": "resultMsg",    "type": "text", "label": "Result Message" }
+        ]
+    },
+    {
+        "name": "links",
+        "type": "array",
+        "label": "Payment Links",
+        "spec": [
+            { "name": "linkId",            "type": "text",    "label": "Link ID"             },
+            { "name": "merchantRequestId", "type": "text",    "label": "Merchant Request ID" },
+            { "name": "linkName",          "type": "text",    "label": "Link Name"           },
+            { "name": "linkType",          "type": "text",    "label": "Link Type"           },
+            { "name": "amount",            "type": "text",    "label": "Amount"              },
+            { "name": "paymentStatus",     "type": "text",    "label": "Payment Status"      },
+            { "name": "linkUrl",           "type": "url",     "label": "Payment URL"         },
+            { "name": "updatedAt",         "type": "date",    "label": "Updated At"          },
+            { "name": "isActive",          "type": "boolean", "label": "Is Active"           },
+            { "name": "custName",          "type": "text",    "label": "Customer Name"       },
+            { "name": "custEmail",         "type": "email",   "label": "Customer Email"      },
+            { "name": "custMobile",        "type": "phone",   "label": "Customer Mobile"     }
+        ]
+    }
 ]
