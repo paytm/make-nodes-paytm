@@ -128,8 +128,7 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
     "type": "select",
     "required": true,
     "options": [
-      { "label": "Production", "value": "https://securegw.paytm.in" },
-      { "label": "Staging", "value": "https://securegw-stage.paytm.in" },
+      { "label": "Production", "value": "https://secure.paytmpayments.com/merchant-adapter" },
       { "label": "QA", "value": "https://pgp-qa5.paytm.in/merchant-adapter" }
     ]
   }
@@ -220,28 +219,28 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ```json
 {
-    "url": "{{parameters.baseUrl}}/integration/fetchOrderList?mid={{parameters.merchantId}}",
-    "method": "POST",
-    "headers": {
-        "Content-Type": "application/json",
-        "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
-    },
-    "body": {
-        "requestId": "{{formatDate(now; 'X')}}",
-        "timestamp": "{{formatDate(now; 'x')}}",
-        "params": {}
-    },
-    "response": {
-        "valid": "{{statusCode == 200}}",
-        "error": {
-            "message": "[{{statusCode}}] {{body.error}}"
-        }
-    },
-    "log": {
-        "sanitize": [
-            "request.headers.X-Signature"
-        ]
+  "url": "{{parameters.baseUrl}}/integration/fetchOrderList?mid={{parameters.merchantId}}&env=production",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Signature": "{{sha256(parameters.merchantId; 'hex'; parameters.keySecret; 'utf8')}}"
+  },
+  "body": {
+    "requestId": "{{formatDate(now; 'X')}}",
+    "timestamp": "{{formatDate(now; 'x')}}",
+    "params": {}
+  },
+  "response": {
+    "valid": "{{statusCode == 200}}",
+    "error": {
+      "message": "[{{statusCode}}] {{body.error}}"
     }
+  },
+  "log": {
+    "sanitize": [
+      "request.headers.X-Signature"
+    ]
+  }
 }
 ```
 
@@ -457,40 +456,40 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ```json
 {
-    "url": "{{connection.baseUrl}}/integration/createPaymentLink?mid={{connection.merchantId}}",
-    "method": "POST",
-    "headers": {
-        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
-    },
-    "body": {
-        "requestId": "{{formatDate(now; 'X')}}000",
-        "timestamp": "{{formatDate(now; 'X')}}000",
-        "params": {
-            "mid": "{{connection.merchantId}}",
-            "linkName": "{{parameters.linkName}}",
-            "linkDescription": "{{parameters.linkDescription}}",
-            "linkType": "{{parameters.linkType}}",
-            "amount": "{{parameters.amount}}",
-            "partialPayment": "{{parameters.partialPayment}}",
-            "bindLinkIdMobile": "{{parameters.bindLinkIdMobile}}",
-            "maxPaymentsAllowed": "{{parameters.maxPaymentsAllowed}}",
-            "customerContact": {
-                "customerName": "{{parameters.customerName}}",
-                "customerEmail": "{{parameters.customerEmail}}",
-                "customerMobile": "{{parameters.customerMobile}}"
-            },
-            "sendSms": "{{parameters.sendSms}}",
-            "sendEmail": "{{parameters.sendEmail}}",
-            "expiryDate": "{{formatDate(parameters.expiryDate; 'DD/MM/YYYY')}}",
-            "merchantRequestId": "{{parameters.merchantRequestId}}",
-            "customerId": "{{parameters.customerId}}",
-            "linkNotes": "{{parameters.linkNotes}}",
-            "statusCallbackUrl": "{{parameters.statusCallbackUrl}}"
-        }
-    },
-    "response": {
-        "output": "{{body.data}}"
+  "url": "{{connection.baseUrl}}/integration/createPaymentLink?mid={{connection.merchantId}}",
+  "method": "POST",
+  "headers": {
+    "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
+  },
+  "body": {
+    "requestId": "{{formatDate(now; 'X')}}000",
+    "timestamp": "{{formatDate(now; 'X')}}000",
+    "params": {
+      "mid": "{{connection.merchantId}}",
+      "linkName": "{{parameters.linkName}}",
+      "linkDescription": "{{parameters.linkDescription}}",
+      "linkType": "{{parameters.linkType}}",
+      "amount": "{{parameters.amount}}",
+      "partialPayment": "{{parameters.partialPayment}}",
+      "bindLinkIdMobile": "{{parameters.bindLinkIdMobile}}",
+      "maxPaymentsAllowed": "{{parameters.maxPaymentsAllowed}}",
+      "customerContact": {
+        "customerName": "{{parameters.customerName}}",
+        "customerEmail": "{{parameters.customerEmail}}",
+        "customerMobile": "{{parameters.customerMobile}}"
+      },
+      "sendSms": "{{parameters.sendSms}}",
+      "sendEmail": "{{parameters.sendEmail}}",
+      "expiryDate": "{{formatDate(parameters.expiryDate; 'DD/MM/YYYY')}}",
+      "merchantRequestId": "{{parameters.merchantRequestId}}",
+      "customerId": "{{parameters.customerId}}",
+      "linkNotes": "{{parameters.linkNotes}}",
+      "statusCallbackUrl": "{{parameters.statusCallbackUrl}}"
     }
+  },
+  "response": {
+    "output": "{{body.data}}"
+  }
 }
 ```
 
@@ -648,33 +647,33 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ```json
 {
-    "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
-    "method": "POST",
-    "headers": {
-        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
-    },
-    "body": {
-        "requestId": "{{formatDate(now; 'X')}}000",
-        "timestamp": "{{formatDate(now; 'X')}}000",
-        "params": {
-            "mid": "{{connection.merchantId}}",
-            "paymentStatus": "{{parameters.paymentStatus}}",
-            "merchantRequestId": "{{parameters.merchantRequestId}}",
-            "linkId": "{{parameters.linkId}}",
-            "customerName": "{{parameters.customerName}}",
-            "customerEmail": "{{parameters.customerEmail}}",
-            "customerPhone": "{{parameters.customerPhone}}",
-            "searchFilterRequestBody": {
-                "fromDate": "{{formatDate(parameters.filterFromDate; 'DD/MM/YYYY')}}",
-                "toDate": "{{formatDate(parameters.filterToDate; 'DD/MM/YYYY')}}",
-                "isActive": "{{parameters.filterIsActive}}"
-            }
-        }
-    },
-    "response": {
-        "output": "{{body.data}}"
+  "url": "{{connection.baseUrl}}/integration/fetchPaymentLinks?mid={{connection.merchantId}}",
+  "method": "POST",
+  "headers": {
+    "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
+  },
+  "body": {
+    "requestId": "{{formatDate(now; 'X')}}000",
+    "timestamp": "{{formatDate(now; 'X')}}000",
+    "params": {
+      "mid": "{{connection.merchantId}}",
+      "paymentStatus": "{{parameters.paymentStatus}}",
+      "merchantRequestId": "{{parameters.merchantRequestId}}",
+      "linkId": "{{parameters.linkId}}",
+      "customerName": "{{parameters.customerName}}",
+      "customerEmail": "{{parameters.customerEmail}}",
+      "customerPhone": "{{parameters.customerPhone}}",
+      "searchFilterRequestBody": {
+        "fromDate": "{{formatDate(parameters.filterFromDate; 'DD/MM/YYYY')}}",
+        "toDate": "{{formatDate(parameters.filterToDate; 'DD/MM/YYYY')}}",
+        "isActive": "{{parameters.filterIsActive}}"
+      }
     }
-}
+  },
+  "response": {
+    "output": "{{body.data}}"
+  }
+} 
 ```
 
 ---
@@ -793,6 +792,7 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
+            "mid": "{{connection.merchantId}}",
             "linkId": "{{parameters.linkId}}",
             "searchStartDate": "{{formatDate(parameters.searchStartDate; 'YYYY-MM-DD')}}",
             "searchEndDate": "{{formatDate(parameters.searchEndDate; 'YYYY-MM-DD')}}",
@@ -801,7 +801,7 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
         }
     },
     "response": {
-        "iterate": "{{body.data.txnDetailsList}}",
+        "iterate": "{{body.data.body.orders}}",
         "output": "{{item}}"
     }
 }
