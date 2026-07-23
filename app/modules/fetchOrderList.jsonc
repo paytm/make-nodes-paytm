@@ -1,14 +1,22 @@
 /**
  * MODULE: fetchOrderList
- * TYPE: Search (returns order list bundle)
+ * TYPE: Search (returns order list)
  * PROXY FUNCTION: fetchOrderList
- * DOWNSTREAM: POST /merchant-passbook/search/list/order/v2
+ * DOWNSTREAM: RTDD POST …/pgrtdd/dataservice/bizorder/search.htm
+ *   function = pgrtdd.dataservice.bizorder.search
  *
- * KEY NOTES (from Zapier parity):
- *   - orderSearchStatus "ALL" is INVALID at Paytm; map to "SUCCESS|FAILURE|PENDING"
- *   - Dates must be IST datetime: "YYYY-MM-DDTHH:mm:ss+05:30"
- *   - isSort must be boolean true
- *   - X-Signature = HMAC-SHA256(merchantId, connection.keySecret)
+ * RTDD contract (BizOrderSearchRequest): nest business fields under params.body so proxy builds
+ *   {"request":{"head":{…},"body":{…}},"signature":"…"}.
+ *
+ * Mandatory / core body fields (ma-facade BizOrderSearchRequestBody + test sample):
+ *   - searchConditions[] — searchKey=MERCHANT_ID, searchValue=MID (required)
+ *   - orderCreatedStartTime / orderCreatedEndTime — YYYY-MM-DDTHH:mm:ss+05:30
+ * Optional later: orderStatuses[], bizOrderTypes[] (enums — not passbook "ALL"/pipe strings)
+ *
+ * Do NOT send passbook fields here: mid, fromDate, toDate, orderSearchStatus, pageNumber.
+ * Zapier "Fetch All Orders" uses merchant-passbook; this module hits RTDD bizorder.search.
+ *
+ * RESPONSE: body.data.response.body.orders
  */
 {
     "url": "{{connection.baseUrl}}/integration/fetchOrderList?mid={{connection.merchantId}}",
@@ -20,18 +28,20 @@
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "mid": "{{connection.merchantId}}",
-            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
-            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
-            "orderSearchStatus": "{{if(parameters.orderSearchStatus == 'ALL'; 'SUCCESS|FAILURE|PENDING'; ifempty(parameters.orderSearchStatus; 'SUCCESS'))}}",
-            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'ALL')}}",
-            "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "isSort": true
+            "body": {
+                "searchConditions": [
+                    {
+                        "searchKey": "MERCHANT_ID",
+                        "searchValue": "{{connection.merchantId}}"
+                    }
+                ],
+                "orderCreatedStartTime": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+                "orderCreatedEndTime": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30"
+            }
         }
     },
     "response": {
-        // Returns full response as one bundle: { resultInfo, orderList[], totalCount }
-        "output": "{{body.data}}"
+        "iterate": "{{body.data.response.body.orders}}",
+        "output": "{{item}}"
     }
 }

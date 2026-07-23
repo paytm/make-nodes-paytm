@@ -1,6 +1,6 @@
 /**
  * INTERFACE: settlementTxnListByDate
- * OUTPUT: one item from body.data.body.txnList (the iterate path)
+ * OUTPUT: one item from body.data.response.body.settlementDetailList (the iterate path)
  *
  * Paste this into: Apps Editor → settlementTxnListByDate → Interface tab
  * Strip JSONC comments first.

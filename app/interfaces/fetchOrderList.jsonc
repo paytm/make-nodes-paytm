@@ -1,34 +1,15 @@
 /**
  * INTERFACE: fetchOrderList
- * OUTPUT: full response bundle — { resultInfo, orderList[], totalCount }
+ * OUTPUT: one item from body.data.response.body.orders (RTDD bizorder.search)
  *
  * Paste into: Apps Editor → fetchOrderList → Interface tab (strip JSONC comments first)
- * Field names verified against Zapier parity + live Paytm API response.
+ * Field names follow BizOrderSearch / BizOrderQuery — verify against a live SUCCESS response.
  */
 [
-    {
-        "name": "resultInfo",
-        "type": "collection",
-        "label": "Result Info",
-        "spec": [
-            { "name": "resultStatus", "type": "text",   "label": "Result Status"  },
-            { "name": "resultCode",   "type": "text",   "label": "Result Code"    },
-            { "name": "resultMsg",    "type": "text",   "label": "Result Message" }
-        ]
-    },
-    {
-        "name": "orderList",
-        "type": "array",
-        "label": "Order List",
-        "spec": [
-            { "name": "orderId",          "type": "text",     "label": "Order ID"           },
-            { "name": "merchantOrderId",  "type": "text",     "label": "Merchant Order ID"  },
-            { "name": "txnId",            "type": "text",     "label": "Transaction ID"     },
-            { "name": "txnAmount",        "type": "text",     "label": "Transaction Amount" },
-            { "name": "txnStatus",        "type": "text",     "label": "Transaction Status" },
-            { "name": "txnDate",          "type": "date",     "label": "Transaction Date"   },
-            { "name": "payMode",          "type": "text",     "label": "Payment Mode"       }
-        ]
-    },
-    { "name": "totalCount", "type": "number", "label": "Total Count" }
+    { "name": "bizOrderId", "type": "text", "label": "Biz Order ID" },
+    { "name": "merchantTransId", "type": "text", "label": "Merchant Trans ID" },
+    { "name": "orderStatus", "type": "text", "label": "Order Status" },
+    { "name": "bizType", "type": "text", "label": "Biz Type" },
+    { "name": "orderCreatedTime", "type": "date", "label": "Order Created Time" },
+    { "name": "payMethod", "type": "text", "label": "Pay Method" }
 ]

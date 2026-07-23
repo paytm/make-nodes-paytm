@@ -1,50 +1,27 @@
 /**
  * INTERFACE: orderDetail
- * OUTPUT: body.data — the full Paytm RTDD order detail response
+ * OUTPUT: body.data.response.body — RTDD orderDetailQuery detail object
  *
- * Paste this into: Apps Editor → orderDetail → Interface tab
- * Strip JSONC comments first.
- *
- * NOTE: This is an RTDD-signed endpoint. The proxy returns the raw Paytm response
- *       inside data. Verify field names against a real response — RTDD responses
- *       may differ from standard Paytm API format.
+ * Paste into: Apps Editor → orderDetail → Interface tab (strip JSONC comments first)
+ * Verify field names against a live SUCCESS response.
  */
 [
     {
-        "name": "head",
-        "label": "Response head",
+        "name": "resultInfo",
+        "label": "Result info",
         "type": "collection",
         "spec": [
-            { "name": "responseTimestamp", "label": "Response timestamp", "type": "text" },
-            { "name": "signature",         "label": "Signature",          "type": "text" }
+            { "name": "resultStatus", "label": "Result status", "type": "text" },
+            { "name": "resultCode", "label": "Result code", "type": "text" },
+            { "name": "resultCodeId", "label": "Result code ID", "type": "text" },
+            { "name": "resultMsg", "label": "Result message", "type": "text" }
         ]
     },
-    {
-        "name": "body",
-        "label": "Response body",
-        "type": "collection",
-        "spec": [
-            {
-                "name": "resultInfo",
-                "label": "Result info",
-                "type": "collection",
-                "spec": [
-                    { "name": "resultStatus", "label": "Result status", "type": "text" },
-                    { "name": "resultCode",   "label": "Result code",   "type": "text" },
-                    { "name": "resultMsg",    "label": "Result message", "type": "text" }
-                ]
-            },
-            { "name": "orderId",      "label": "Order ID",            "type": "text" },
-            { "name": "txnId",        "label": "Transaction ID",      "type": "text" },
-            { "name": "txnAmount",    "label": "Amount",              "type": "text" },
-            { "name": "status",       "label": "Status",              "type": "text" },
-            { "name": "paymentMode",  "label": "Payment mode",        "type": "text" },
-            { "name": "txnDate",      "label": "Transaction date",    "type": "date" },
-            { "name": "bankName",     "label": "Bank name",           "type": "text" },
-            { "name": "bankTxnId",    "label": "Bank transaction ID", "type": "text" },
-            { "name": "refundAmount", "label": "Refund amount",       "type": "text" },
-            { "name": "custEmail",    "label": "Customer email",      "type": "email" },
-            { "name": "custMobile",   "label": "Customer mobile",     "type": "phone" }
-        ]
-    }
+    { "name": "bizOrderId", "label": "Biz order ID", "type": "text" },
+    { "name": "merchantTransId", "label": "Merchant trans ID", "type": "text" },
+    { "name": "orderStatus", "label": "Order status", "type": "text" },
+    { "name": "bizType", "label": "Biz type", "type": "text" },
+    { "name": "ipRoleId", "label": "IP role ID", "type": "text" },
+    { "name": "orderCreatedTime", "label": "Order created time", "type": "date" },
+    { "name": "orderCompletedTime", "label": "Order completed time", "type": "date" }
 ]

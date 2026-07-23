@@ -1,15 +1,17 @@
 /**
  * MODULE: orderDetail
  * TYPE: Action (single-item response)
- * PAYTM ENDPOINT: RTDD via proxy
  * PROXY FUNCTION: orderDetail
+ * DOWNSTREAM: RTDD POST …/pgrtdd/consume/bizOrder/orderDetailQuery.htm
+ *   function = pgrtdd.consume.bizOrder.orderDetailQuery
  *
- * RTDD/Settlement envelope — proxy builds the signed downstream body.
- * No checksum logic in IML.
+ * RTDD contract (BizOrderDetailQueryRequestBody / Zapier parity):
+ *   Nest under params.body → proxy builds {"request":{"head":{…},"body":{…}},"signature":"…"}.
+ *   Mandatory: ipRoleId (MID), bizOrderId
+ *   Optional: isSettlementInfo, excludePaymentsData (Zapier sends only when true)
  *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data path against actual Paytm response during E2E testing.
+ * RESPONSE (Action — no iterate):
+ *   body.data.response.body  (order detail fields + resultInfo)
  */
 {
     "url": "{{connection.baseUrl}}/integration/orderDetail?mid={{connection.merchantId}}",
@@ -21,13 +23,15 @@
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "bizOrderId": "{{parameters.bizOrderId}}",
-            "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
-            "excludePaymentsData": "{{ifempty(parameters.excludePaymentsData; false)}}"
+            "body": {
+                "ipRoleId": "{{connection.merchantId}}",
+                "bizOrderId": "{{parameters.bizOrderId}}",
+                "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
+                "excludePaymentsData": "{{ifempty(parameters.excludePaymentsData; false)}}"
+            }
         }
     },
     "response": {
-        // Verify body.data is the correct output path during E2E testing.
-        "output": "{{body.data}}"
+        "output": "{{body.data.response.body}}"
     }
 }

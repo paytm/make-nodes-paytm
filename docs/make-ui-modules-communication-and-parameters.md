@@ -960,18 +960,21 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "mid": "{{connection.merchantId}}",
-            "fromDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
-            "toDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
-            "orderSearchStatus": "{{if(parameters.orderSearchStatus == 'ALL'; 'SUCCESS|FAILURE|PENDING'; ifempty(parameters.orderSearchStatus; 'SUCCESS'))}}",
-            "orderSearchType": "{{ifempty(parameters.orderSearchType; 'ALL')}}",
-            "pageNumber": "{{ifempty(parameters.pageNumber; 1)}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "isSort": true
+            "body": {
+                "searchConditions": [
+                    {
+                        "searchKey": "MERCHANT_ID",
+                        "searchValue": "{{connection.merchantId}}"
+                    }
+                ],
+                "orderCreatedStartTime": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+                "orderCreatedEndTime": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30"
+            }
         }
     },
     "response": {
-        "output": "{{body.data}}"
+        "iterate": "{{body.data.response.body.orders}}",
+        "output": "{{item}}"
     }
 }
 ```
@@ -1074,13 +1077,16 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "bizOrderId": "{{parameters.bizOrderId}}",
-            "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
-            "excludePaymentsData": "{{ifempty(parameters.excludePaymentsData; false)}}"
+            "body": {
+                "ipRoleId": "{{connection.merchantId}}",
+                "bizOrderId": "{{parameters.bizOrderId}}",
+                "isSettlementInfo": "{{ifempty(parameters.isSettlementInfo; false)}}",
+                "excludePaymentsData": "{{ifempty(parameters.excludePaymentsData; false)}}"
+            }
         }
     },
     "response": {
-        "output": "{{body.data}}"
+        "output": "{{body.data.response.body}}"
     }
 }
 ```
@@ -1419,17 +1425,17 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}",
+            "mid": "{{connection.merchantId}}",
+            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
             "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
             "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "isSort": "{{ifempty(parameters.isSort; true)}}"
+            "isSort": true
         }
     },
-    "response": {
-        "iterate": "{{body.data.refundDetailList}}",
-        "output": "{{item}}"
-    }
+"response": {
+    "output": "{{body.data}}"
+}
 }
 ```
 
@@ -1581,28 +1587,31 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ```json
 {
-    "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
-    "method": "POST",
-    "headers": {
-        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
-    },
-    "body": {
-        "requestId": "{{formatDate(now; 'X')}}000",
-        "timestamp": "{{formatDate(now; 'X')}}000",
-        "params": {
-            "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD HH:mm:ss')}}",
-            "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD HH:mm:ss')}}",
-            "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "settlementBillId": "{{parameters.settlementBillId}}",
-            "settleStatus": "{{parameters.settleStatus}}",
-            "utrNo": "{{parameters.utrNo}}"
-        }
-    },
-    "response": {
-        "iterate": "{{body.data.body.settleBillList}}",
-        "output": "{{item}}"
+  "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
+  "method": "POST",
+  "headers": {
+    "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
+  },
+  "body": {
+    "requestId": "{{formatDate(now; 'X')}}000",
+    "timestamp": "{{formatDate(now; 'X')}}000",
+    "params": {
+      "body": {
+        "ipRoleId": "{{connection.merchantId}}",
+        "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD')}}T00:00:00+05:30",
+        "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD')}}T23:59:59+05:30",
+        "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
+        "pageSize": "{{ifempty(parameters.limit; 20)}}",
+        "isSort": true,
+        "isFilterZeroAmount": true,
+        "isEventFlow": true
+      }
     }
+  },
+  "response": {
+    "iterate": "{{body.data.response.body.settlementBillList}}",
+    "output": "{{item}}"
+ }
 }
 ```
 
@@ -1715,26 +1724,29 @@ Use when wiring modules in **Apps Editor**: define **mappable parameters** first
 
 ```json
 {
-    "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
-    "method": "POST",
-    "headers": {
-        "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
-    },
-    "body": {
-        "requestId": "{{formatDate(now; 'X')}}000",
-        "timestamp": "{{formatDate(now; 'X')}}000",
-        "params": {
-            "startDate": "{{formatDate(parameters.startDate; 'YYYY-MM-DD HH:mm:ss')}}",
-            "endDate": "{{formatDate(parameters.endDate; 'YYYY-MM-DD HH:mm:ss')}}",
-            "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "settlementOrderId": "{{parameters.settlementOrderId}}"
-        }
-    },
-    "response": {
-        "iterate": "{{body.data.body.txnList}}",
-        "output": "{{item}}"
+  "url": "{{connection.baseUrl}}/integration/settlementTxnListByDate?mid={{connection.merchantId}}",
+  "method": "POST",
+  "headers": {
+    "X-Signature": "{{sha256(connection.merchantId; 'hex'; connection.keySecret; 'utf8')}}"
+  },
+  "body": {
+    "requestId": "{{formatDate(now; 'X')}}000",
+    "timestamp": "{{formatDate(now; 'X')}}000",
+    "params": {
+      "body": {
+        "ipRoleId": "{{connection.merchantId}}",
+        "settlementStartTime": "{{formatDate(parameters.startDate; 'YYYY-MM-DD')}}T00:00:00+05:30",
+        "settlementEndTime": "{{formatDate(parameters.endDate; 'YYYY-MM-DD')}}T23:59:59+05:30",
+        "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
+        "pageSize": "{{ifempty(parameters.limit; 20)}}",
+        "settlementOrderId": "{{parameters.settlementOrderId}}"
+      }
     }
+  },
+  "response": {
+    "iterate": "{{body.data.response.body.settlementDetailList}}",
+    "output": "{{item}}"
+  }
 }
 ```
 

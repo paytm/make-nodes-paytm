@@ -4,17 +4,12 @@
  * PAYTM ENDPOINT: RTDD via proxy
  * PROXY FUNCTION: settlementBillList
  *
- * RTDD/Settlement envelope — proxy builds the signed downstream body.
- * No checksum logic in IML.
+ * RTDD envelope — business fields under params.body (head defaults merged by proxy).
+ * Dates: YYYY-MM-DDTHH:mm:ss+05:30. pageSize max 50.
+ * settleStatus: BANK_INITIATED / PAYOUT_SETTLED / PAYOUT_UNSETTLED / WAIT_FOR_SETTLE
  *
- * NOTE ON PARAMS
- *   settlementStartTime / settlementEndTime — NOT startDate / endDate.
- *   pageSize max is 50.
- *   settleStatus valid values: BANK_INITIATED / PAYOUT_SETTLED / PAYOUT_UNSETTLED / WAIT_FOR_SETTLE
- *
- * RESPONSE STRUCTURE
- *   Proxy wraps Paytm response: { status, function, requestId, data: <paytm_response> }
- *   Verify body.data.body.settleBillList iterate path during E2E testing.
+ * RESPONSE (proxy wraps RTDD):
+ *   body.data.response.body.settlementBillList
  */
 {
     "url": "{{connection.baseUrl}}/integration/settlementBillList?mid={{connection.merchantId}}",
@@ -26,18 +21,23 @@
         "requestId": "{{formatDate(now; 'X')}}000",
         "timestamp": "{{formatDate(now; 'X')}}000",
         "params": {
-            "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD HH:mm:ss')}}",
-            "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD HH:mm:ss')}}",
-            "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
-            "pageSize": "{{ifempty(parameters.limit; 20)}}",
-            "settlementBillId": "{{parameters.settlementBillId}}",
-            "settleStatus": "{{parameters.settleStatus}}",
-            "utrNo": "{{parameters.utrNo}}"
+            "body": {
+                "ipRoleId": "{{connection.merchantId}}",
+                "settlementStartTime": "{{formatDate(parameters.settlementStartTime; 'YYYY-MM-DD')}}T00:00:00+05:30",
+                "settlementEndTime": "{{formatDate(parameters.settlementEndTime; 'YYYY-MM-DD')}}T23:59:59+05:30",
+                "pageNum": "{{ifempty(parameters.pageNum; 1)}}",
+                "pageSize": "{{ifempty(parameters.limit; 20)}}",
+                "isSort": true,
+                "isFilterZeroAmount": true,
+                "isEventFlow": true,
+                "settlementBillId": "{{parameters.settlementBillId}}",
+                "settleStatus": "{{parameters.settleStatus}}",
+                "utrNo": "{{parameters.utrNo}}"
+            }
         }
     },
     "response": {
-        // Verify body.data.body.settleBillList is the correct iterate path during E2E testing.
-        "iterate": "{{body.data.body.settleBillList}}",
+        "iterate": "{{body.data.response.body.settlementBillList}}",
         "output": "{{item}}"
     }
 }
